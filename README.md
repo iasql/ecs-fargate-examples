@@ -48,4 +48,4 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   docker push <ECR URI>:latest
   ```
   
-  6. Access to your service!
+  6. Grab your load balancer DNS and access to your service!
