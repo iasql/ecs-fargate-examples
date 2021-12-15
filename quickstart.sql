@@ -6,7 +6,7 @@ do $$
   declare
     project_name text := 'quickstart';
     port integer := 8088;
-    target_group_health_path text := '/';
+    target_group_health_path text := '/health';
     repository_policy text := '{}';
     container_memory_reservation integer := 8192; -- in MiB
     image_tag text := 'latest';
@@ -28,11 +28,13 @@ do $$
     service text := project_name || '-service';
     cloud_watch_log_group text := project_name || '-log-group';
   begin
+    -- Get default VPC
     select vpc_id, id into default_vpc, default_vpc_id
     from aws_vpc
     where is_default = true
     limit 1;
 
+    -- Get default subnets
     for sn in
       select *
       from aws_subnet
@@ -41,40 +43,51 @@ do $$
       default_subnets := array_append(default_subnets, sn.subnet_id::text);
     end loop;
 
+    -- Security group
     call create_aws_security_group(
       security_group, security_group,
       ('[{"isEgress": false, "ipProtocol": "tcp", "fromPort": ' || port || ', "toPort": ' || port || ', "cidrIpv4": "0.0.0.0/0"}, {"isEgress": true, "ipProtocol": -1, "fromPort": -1, "toPort": -1, "cidrIpv4": "0.0.0.0/0"}]')::jsonb
     );
 
+    -- Target group
     call create_aws_target_group(
       target_group, 'ip', port, default_vpc, 'HTTP', target_group_health_path
     );
 
+    -- Load balancer
     call create_aws_load_balancer(
-      load_balancer, 'internet-facing', default_vpc, 'application', default_subnets, 'ipv4'
+      load_balancer, 'internet-facing', default_vpc, 'application', default_subnets, 'ipv4', array[security_group]
     );
 
+    -- Load balancer listener
     call create_aws_listener(load_balancer, port, 'HTTP', 'forward', target_group);
 
+    -- ECR repository
     call create_ecr_repository(repository);
 
+    -- ECR repository policy
     call create_ecr_repository_policy(repository, repository_policy);
 
+    -- ECS Cluster
     call create_ecs_cluster(quickstart_cluster);
 
-    call create_cloudwatch_log_group(cloud_watch_log_group);
-
+    -- ECS Task definition
     call create_task_definition(
       task_definition, ecs_task_execution_role, ecs_task_execution_role,
       'awsvpc', array['FARGATE']::compatibility_name_enum[], task_definition_resources
     );
 
+    -- Cloudwatch log group
+    call create_cloudwatch_log_group(cloud_watch_log_group);
+
+    -- Container definition for task definition created
     call create_container_definition(
       task_definition, container, true, container_memory_reservation, port, port, 'tcp',
       ('{"PORT": ' || port || '}')::json, image_tag,
       _ecr_repository_name := repository, _cloud_watch_log_group := cloud_watch_log_group
     );
 
+    -- ECS service to run task deinition
     call create_ecs_service(
       service, quickstart_cluster, task_definition, service_desired_count, 'FARGATE',
       'REPLICA', default_subnets, array[security_group], 'ENABLED', target_group
