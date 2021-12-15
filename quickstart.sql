@@ -7,7 +7,6 @@ do $$
     project_name text := 'quickstart';
     port integer := 8088;
     target_group_health_path text := '/health';
-    repository_policy text := '{}';
     container_memory_reservation integer := 8192; -- in MiB
     image_tag text := 'latest';
     task_definition_resources task_definition_cpu_memory_enum := '2vCPU-8GB';
@@ -64,9 +63,6 @@ do $$
 
     -- ECR repository
     call create_ecr_repository(repository);
-
-    -- ECR repository policy
-    call create_ecr_repository_policy(repository, repository_policy);
 
     -- ECS Cluster
     call create_ecs_cluster(quickstart_cluster);
