@@ -21,7 +21,13 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   iasql apply
   ```
   
-  4. Grab your new ECR URI. Could be find in your DB > `aws_ecr` table > `repository_uri` column. Also, you could find it using the AWS UI console.
+  4. Grab your new ECR URI from your DB 
+  ```sql
+  select repository_uri
+  from aws_ecr
+  where repository_name = <repository-name>
+  ```
+
   5. Login, build and push your code to the container registry
 
   - Login:
@@ -49,3 +55,8 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   ```
   
   6. Grab your load balancer DNS and access to your service!
+  ```sql
+  select dns_name
+  from aws_load_balancer
+  where load_balancer_name = <load-balancer-name>
+  ```
