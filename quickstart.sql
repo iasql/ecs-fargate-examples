@@ -41,6 +41,11 @@ do $$
       default_subnets := array_append(default_subnets, sn.subnet_id::text);
     end loop;
 
+    call create_aws_security_group(
+      security_group, security_group,
+      ('[{"isEgress": false, "ipProtocol": "tcp", "fromPort": ' || port || ', "toPort": ' || port || ', "cidrIpv4": "0.0.0.0/0"}, {"isEgress": true, "ipProtocol": -1, "fromPort": -1, "toPort": -1, "cidrIpv4": "0.0.0.0/0"}]')::jsonb
+    );
+
     call create_aws_target_group(
       target_group, 'ip', port, default_vpc, 'HTTP', target_group_health_path
     );
@@ -68,11 +73,6 @@ do $$
       task_definition, container, true, container_memory_reservation, port, port, 'tcp',
       ('{"PORT": ' || port || '}')::json, image_tag,
       _ecr_repository_name := repository, _cloud_watch_log_group := cloud_watch_log_group
-    );
-
-    call create_aws_security_group(
-      security_group, security_group,
-      ('[{"isEgress": false, "ipProtocol": "tcp", "fromPort": ' || port || ', "toPort": ' || port || ', "cidrIpv4": "0.0.0.0/0"}, {"isEgress": true, "ipProtocol": -1, "fromPort": -1, "toPort": -1, "cidrIpv4": "0.0.0.0/0"}]')::jsonb
     );
 
     call create_ecs_service(
