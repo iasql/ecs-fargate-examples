@@ -9,18 +9,17 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   
 ## Usage
 
-  1. Update the quickstart template script with the values of your preference.
-  2. Execute the sql script with the following command:
+  1. Execute the sql script with the following command:
   ```sh
   psql -h db.iasql.com -p 5432 -U <username> -d <db-name>  -v project_name=<project-name> -f <path>/<to>/quickstart.sql
   ```
 
-  3. Apply iasql changes
+  2. Apply iasql changes
   ```sh
   iasql apply
   ```
   
-  4. Grab your new ECR URI from your DB 
+  3. Grab your new ECR URI from your DB 
   ```sql
   select repository_uri
   from aws_public_repository
@@ -31,7 +30,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select repository_uri from aws_public_repository where repository_name = '<project-name>-repository';"
   ```
 
-  5. Login, build and push your code to the container registry
+  4. Login, build and push your code to the container registry
 
   - Login:
   
@@ -57,7 +56,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   docker push <ECR URI>:latest
   ```
   
-  6. Grab your load balancer DNS and access to your service!
+  5. Grab your load balancer DNS
   ```sql
   select dns_name
   from aws_load_balancer
@@ -66,4 +65,9 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   or
   ```sh
   psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select dns_name from aws_load_balancer where load_balancer_name = '<project-name>-load-balancer';"
+  ```
+
+  6. Connect to your service!
+  ```sh
+  curl <dns-name>:8088/health
   ```
