@@ -1,31 +1,30 @@
 -- Quickstart PL/SQL template to launch an ECS fargate service.
--- Cofigure your project updating the first set of variables.
+-- ! Cofigure your project name.
 
 do $$
 <<quickstart>>
   declare
-    project_name text := 'quickstart';
-    port integer := 8088;
-    target_group_health_path text := '/health';
-    container_memory_reservation integer := 8192; -- in MiB
-    image_tag text := 'latest';
-    task_definition_resources task_definition_cpu_memory_enum := '2vCPU-8GB';
-    ecs_task_execution_role text := '<AWS_ECS_EXEC_ROLE>';  -- Need to be filled
-    service_desired_count integer := 1;
+    project_name text := '<project-name>';
 
     default_vpc text;
     default_vpc_id integer;
     sn record;
     default_subnets text[];
+    target_group_health_path text := '/health';
+    port integer := 8088;
+    service_desired_count integer := 1;
+    image_tag text := 'latest';
+    container_memory_reservation integer := 8192; -- in MiB
+    task_definition_resources task_definition_cpu_memory_enum := '2vCPU-8GB';
     target_group text := project_name || '-target-group';
     load_balancer text := project_name || '-load-balancer';
     repository text := project_name || '-repository';
     quickstart_cluster text := project_name || '-cluster';
     container text := project_name || '-container';
     task_definition text := project_name || '-task-definition';
+    ecs_task_execution_role text := null;  -- No necessary for public repositories
     security_group text := project_name || '-security-group';
     service text := project_name || '-service';
-    cloud_watch_log_group text := project_name || '-log-group';
   begin
     -- Get default VPC
     select vpc_id, id into default_vpc, default_vpc_id
@@ -62,7 +61,7 @@ do $$
     call create_aws_listener(load_balancer, port, 'HTTP', 'forward', target_group);
 
     -- ECR repository
-    call create_ecr_repository(repository);
+    call create_ecr_public_repository(repository);
 
     -- ECS Cluster
     call create_ecs_cluster(quickstart_cluster);
@@ -73,14 +72,11 @@ do $$
       'awsvpc', array['FARGATE']::compatibility_name_enum[], task_definition_resources
     );
 
-    -- Cloudwatch log group
-    call create_cloudwatch_log_group(cloud_watch_log_group);
-
     -- Container definition for task definition created
     call create_container_definition(
       task_definition, container, true, container_memory_reservation, port, port, 'tcp',
       ('{"PORT": ' || port || '}')::json, image_tag,
-      _ecr_repository_name := repository, _cloud_watch_log_group := cloud_watch_log_group
+      _ecr_public_repository_name := repository
     );
 
     -- ECS service to run task deinition
