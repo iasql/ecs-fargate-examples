@@ -1,10 +1,10 @@
 -- Quickstart PL/SQL template to launch an ECS fargate service.
--- ! Cofigure your project name.
 
+set project.name = :project_name;
 do $$
 <<quickstart>>
   declare
-    project_name text := '<project-name>';
+    project_name text := current_setting('project.name');
 
     default_vpc text;
     default_vpc_id integer;

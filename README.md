@@ -12,7 +12,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   1. Update the quickstart template script with the values of your preference.
   2. Execute the sql script with the following command:
   ```sh
-  psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -f <path>/<to>/quickstart.sql
+  psql -h db.iasql.com -p 5432 -U <username> -d <db-name>  -v project_name=<project-name> -f <path>/<to>/quickstart.sql
   ```
 
   3. Apply iasql changes
