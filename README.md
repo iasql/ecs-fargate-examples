@@ -11,7 +11,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
 
   1. Execute the sql script with the following command:
   ```sh
-  psql -h db.iasql.com -p 5432 -U <username> -d <db-name>  -v project_name=<project-name> -f <path>/<to>/quickstart.sql
+  PGPASSWORD='<db password>' psql -h db.iasql.com -p 5432 -U <username> -d <db-name>  -v project_name="'<project-name>'" -f <path>/<to>/quickstart.sql
   ```
 
   2. Apply iasql changes
@@ -27,7 +27,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   ```
   or
   ```sh
-  psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select repository_uri from aws_public_repository where repository_name = '<project-name>-repository';"
+  PGPASSWORD='<db password>' psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select repository_uri from aws_public_repository where repository_name = '<project-name>-repository';"
   ```
 
   4. Login, build and push your code to the container registry
@@ -64,7 +64,7 @@ Template to help you deploy an HTTP server via IaSQL to your AWS account using t
   ```
   or
   ```sh
-  psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select dns_name from aws_load_balancer where load_balancer_name = '<project-name>-load-balancer';"
+  PGPASSWORD='<db password>' psql -h db.iasql.com -p 5432 -U <username> -d <db-name> -c "select dns_name from aws_load_balancer where load_balancer_name = '<project-name>-load-balancer';"
   ```
 
   6. Connect to your service!
