@@ -6,10 +6,7 @@ do $$
   declare
     project_name text := current_setting('project.name');
 
-    default_vpc text;
-    default_vpc_id integer;
-    sn record;
-    default_subnets text[];
+    default_vpc text := 'default';
     target_group_health_path text := '/health';
     port integer := 8088;
     service_desired_count integer := 1;
@@ -26,45 +23,30 @@ do $$
     security_group text := project_name || '-security-group';
     service text := project_name || '-service';
   begin
-    -- Get default VPC
-    select vpc_id, id into default_vpc, default_vpc_id
-    from aws_vpc
-    where is_default = true
-    limit 1;
-
-    -- Get default subnets
-    for sn in
-      select *
-      from aws_subnet
-      where vpc_id = default_vpc_id
-    loop
-      default_subnets := array_append(default_subnets, sn.subnet_id::text);
-    end loop;
-
     -- Security group
-    call create_aws_security_group(
+    call create_or_update_aws_security_group(
       security_group, security_group,
       ('[{"isEgress": false, "ipProtocol": "tcp", "fromPort": ' || port || ', "toPort": ' || port || ', "cidrIpv4": "0.0.0.0/0"}, {"isEgress": true, "ipProtocol": -1, "fromPort": -1, "toPort": -1, "cidrIpv4": "0.0.0.0/0"}]')::jsonb
     );
 
     -- Target group
-    call create_aws_target_group(
+    call create_or_update_aws_target_group(
       target_group, 'ip', port, default_vpc, 'HTTP', target_group_health_path
     );
 
     -- Load balancer
-    call create_aws_load_balancer(
-      load_balancer, 'internet-facing', default_vpc, 'application', default_subnets, 'ipv4', array[security_group]
+    call create_or_update_aws_load_balancer(
+      load_balancer, 'internet-facing', default_vpc, 'application', 'ipv4', array[security_group]
     );
 
     -- Load balancer listener
-    call create_aws_listener(load_balancer, port, 'HTTP', 'forward', target_group);
+    call create_or_update_aws_listener(load_balancer, port, 'HTTP', 'forward', target_group);
 
     -- ECR repository
-    call create_ecr_public_repository(repository);
+    call create_or_update_ecr_public_repository(repository);
 
     -- ECS Cluster
-    call create_ecs_cluster(quickstart_cluster);
+    call create_or_update_ecs_cluster(quickstart_cluster);
 
     -- ECS Task definition
     call create_task_definition(
@@ -80,9 +62,9 @@ do $$
     );
 
     -- ECS service to run task deinition
-    call create_ecs_service(
+    call create_or_update_ecs_service(
       service, quickstart_cluster, task_definition, service_desired_count, 'FARGATE',
-      'REPLICA', default_subnets, array[security_group], 'ENABLED', target_group
+      'REPLICA', array[security_group], 'ENABLED', target_group
     );
 
   end quickstart
