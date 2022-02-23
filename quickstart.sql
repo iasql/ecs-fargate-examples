@@ -64,7 +64,7 @@ do $$
     -- ECS service to run task deinition
     call create_or_update_ecs_service(
       service, quickstart_cluster, task_definition, service_desired_count, 'FARGATE',
-      'REPLICA', array[security_group], 'ENABLED', target_group
+      'REPLICA', array[security_group], 'ENABLED', _target_group_name := target_group
     );
 
   end quickstart
