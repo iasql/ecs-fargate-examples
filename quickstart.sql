@@ -12,7 +12,7 @@ do $$
     service_desired_count integer := 1;
     image_tag text := 'latest';
     container_memory_reservation integer := 8192; -- in MiB
-    task_definition_resources task_definition_cpu_memory_enum := '2vCPU-8GB';
+    task_definition_resources aws_task_definition_cpu_memory_enum := '2vCPU-8GB';
     target_group text := project_name || '-target-group';
     load_balancer text := project_name || '-load-balancer';
     repository text := project_name || '-repository';
