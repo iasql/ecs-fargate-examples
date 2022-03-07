@@ -50,21 +50,20 @@ do $$
 
     -- ECS Task definition
     call create_task_definition(
-      task_definition, ecs_task_execution_role, ecs_task_execution_role,
-      'awsvpc', array['FARGATE']::compatibility_name_enum[], task_definition_resources
+      task_definition, ecs_task_execution_role, ecs_task_execution_role, task_definition_resources
     );
 
     -- Container definition for task definition created
     call create_container_definition(
-      task_definition, container, true, container_memory_reservation, port, port, 'tcp',
+      container, task_definition, true, container_memory_reservation, port, port, 'tcp',
       ('{"PORT": ' || port || '}')::json, image_tag,
       _ecr_public_repository_name := repository
     );
 
     -- ECS service to run task deinition
     call create_or_update_ecs_service(
-      service, quickstart_cluster, task_definition, service_desired_count, 'FARGATE',
-      'REPLICA', array[security_group], 'ENABLED', _target_group_name := target_group
+      service, quickstart_cluster, task_definition, service_desired_count,
+      array[security_group], 'ENABLED', null, _target_group_name := target_group
     );
 
   end quickstart
