@@ -70,7 +70,7 @@ module.exports = class Initial1646683871219 {
             (aws_load_balancer_id, aws_security_group_id)
         VALUES
             ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
-              (SELECT id FROM aws_security_group WHERE group_name = 'default' LIMIT 1));
+              (SELECT id FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}' LIMIT 1));
         INSERT INTO aws_listener
             (aws_load_balancer_id, port, protocol, action_type, target_group_id)
         VALUES
