@@ -59,7 +59,7 @@ module.exports = class Initial1646683871219 {
     // TODO replace SPs
     await queryRunner.query(`
       INSERT INTO aws_target_group (target_group_name, target_type, protocol, port, vpc, health_check_path)
-      VALUES ('${TARGET_GROUP}', 'ip', '${PROTOCOL}', ${PORT}, '${DEFAULT_VPC}', '${TARGET_GROUP_HEALTH_PATH}');
+      VALUES ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, '${DEFAULT_VPC}', '${TARGET_GROUP_HEALTH_PATH}');
       call create_or_update_aws_load_balancer(
         '${LOAD_BALANCER}', 'internet-facing', '${DEFAULT_VPC}', 'application', 'ipv4', array['${SECURITY_GROUP}']
       );
@@ -124,28 +124,22 @@ module.exports = class Initial1646683871219 {
       COMMIT;
     `);
 
-    // delete ECS tasks and container definitions
+    // delete ECS + ECR
     await queryRunner.query(`    
       BEGIN;
         DELETE FROM aws_container_definition
         using aws_task_definition
-        WHERE aws_container_definition.task_definition_id = aws_task_definition.id and aws_task_definition.family = '${tdPublicRepositoryFamily}';
+        WHERE aws_container_definition.task_definition_id = aws_task_definition.id and aws_task_definition.family = '${TASK_DEF_REPO_FAMILY}';
 
         DELETE FROM aws_task_definition
         WHERE family = '${TASK_DEF_REPO_FAMILY}';
 
+        DELETE FROM aws_cluster
+        WHERE cluster_name = '${CLUSTER}';
+
         DELETE FROM aws_public_repository
         WHERE repository_name = '${REPOSITORY}';
       COMMIT;
-    `);
-
-    // delete ECS cluster + ECR repository
-    await queryRunner.query(`   
-      DELETE FROM aws_cluster
-      WHERE cluster_name = '${CLUSTER}';
-
-      DELETE FROM aws_public_repository
-      WHERE repository_name = '${REPOSITORY}';
     `);
 
     // delete ELB
