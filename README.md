@@ -9,7 +9,7 @@ To add a migration to infra as a SQL db run:
 
 ```bash
 npm i
-./node_modules/.bin/typeorm migration:create --outputJs -n <YourMigrationName>
+npx typeorm migration:create --outputJs -n <YourMigrationName>
 ```
 
 This will create a `infra/src/migration/YourMigrationName.ts`. To read more about TypeORM migrations: https://typeorm.io/#/migrations.
