@@ -22,12 +22,10 @@ const CLUSTER = `${PROJECT_NAME}-cluster`;
 const SERVICE = `${PROJECT_NAME}-service`;
 
 // AWS SECURITY GROUP + VPC
-const DEFAULT_VPC = 'default';
 const SECURITY_GROUP = `${PROJECT_NAME}-security-group`;
 const PORT = 8088;
 
 // AWS ELASTIC LOAD BALANCER
-const TARGET_GROUP_HEALTH_PATH = '/health';
 const TARGET_GROUP = `${PROJECT_NAME}-target`;
 const LOAD_BALANCER = `${PROJECT_NAME}-load-balancer`;
 
@@ -58,15 +56,26 @@ module.exports = class Initial1646683871219 {
     `);
 
     // load balancer + cloudwatch
-    // TODO replace SPs
     await queryRunner.query(`
       BEGIN;
-        INSERT INTO aws_target_group (target_group_name, target_type, protocol, port, vpc, health_check_path)
-        VALUES ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, '${DEFAULT_VPC}', '${TARGET_GROUP_HEALTH_PATH}');
-        CALL create_or_update_aws_load_balancer(
-          '${LOAD_BALANCER}', 'internet-facing', '${DEFAULT_VPC}', 'application', 'ipv4', array['${SECURITY_GROUP}']
-        );
-        CALL create_or_update_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
+        INSERT INTO aws_target_group
+            (target_group_name, target_type, protocol, port, vpc, health_check_path)
+        VALUES
+            ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, 'default', '/health');
+        INSERT INTO aws_load_balancer
+            (load_balancer_name, scheme, vpc, load_balancer_type, ip_address_type)
+        VALUES
+            ('${LOAD_BALANCER}', 'internet-facing', 'default', 'application', 'ipv4');
+        INSERT INTO aws_load_balancer_security_groups
+            (aws_load_balancer_id, aws_security_group_id)
+        VALUES
+            ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
+              (SELECT id FROM aws_security_group WHERE group_name = 'default' LIMIT 1));
+        INSERT INTO aws_listener
+            (aws_load_balancer_id, port, protocol, action_type, target_group_id)
+        VALUES
+            ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
+              ${PORT}, 'HTTP', 'forward', (SELECT id FROM aws_target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1));
         INSERT INTO log_group (log_group_name)
         VALUES ('${LOG_GROUP}');
       COMMIT;
@@ -79,7 +88,8 @@ module.exports = class Initial1646683871219 {
 
         INSERT INTO aws_cluster (cluster_name) VALUES('${CLUSTER}');
 
-        INSERT INTO aws_task_definition ("family", cpu_memory, revision) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}', 1);
+        INSERT INTO aws_task_definition ("family", cpu_memory)
+        VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
 
         INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
         VALUES (
@@ -146,12 +156,24 @@ module.exports = class Initial1646683871219 {
     `);
 
     // delete ELB + Cloudwatch
-    // TODO replace SPs
     await queryRunner.query(`
-      CALL delete_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
-      CALL delete_aws_load_balancer('${LOAD_BALANCER}');
-      CALL delete_aws_target_group('${TARGET_GROUP}');
-      DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
+      BEGIN;
+        DELETE FROM aws_listener
+        WHERE aws_load_balancer_id = (SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1)
+          and port = ${PORT} and protocol = 'HTTP' and action_type = 'forward'
+          and target_group_id = (SELECT id FROM aws_target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1);
+
+        DELETE FROM aws_load_balancer_security_groups
+        WHERE aws_load_balancer_id = (SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1);
+
+        DELETE FROM aws_load_balancer
+        WHERE load_balancer_name = '${LOAD_BALANCER}';
+
+        DELETE FROM aws_target_group
+        WHERE target_group_name = '${TARGET_GROUP}';
+
+        DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
+      COMMIT;
     `);
 
     // delete security groups
