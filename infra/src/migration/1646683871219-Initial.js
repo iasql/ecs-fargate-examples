@@ -120,15 +120,6 @@ module.exports = class Initial1646683871219 {
       COMMIT;
     `);
 
-    // delete ELB + Cloudwatch
-    // TODO replace SPs
-    await queryRunner.query(`
-      CALL delete_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
-      CALL delete_aws_load_balancer('${LOAD_BALANCER}');
-      CALL delete_aws_target_group('${TARGET_GROUP}');
-      DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
-    `);
-
     // delete ECS + ECR
     await queryRunner.query(`    
       BEGIN;
@@ -146,6 +137,15 @@ module.exports = class Initial1646683871219 {
 
         DELETE FROM aws_public_repository WHERE repository_name = '${REPOSITORY}';
       COMMIT;
+    `);
+
+    // delete ELB + Cloudwatch
+    // TODO replace SPs
+    await queryRunner.query(`
+      CALL delete_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
+      CALL delete_aws_load_balancer('${LOAD_BALANCER}');
+      CALL delete_aws_target_group('${TARGET_GROUP}');
+      DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
     `);
 
     // delete security groups
