@@ -79,7 +79,7 @@ module.exports = class Initial1646683871219 {
 
         INSERT INTO aws_cluster (cluster_name) VALUES('${CLUSTER}');
 
-        INSERT INTO aws_task_definition ("family", cpu_memory) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
+        INSERT INTO aws_task_definition ("family", cpu_memory, revision) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}', 1);
 
         INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
         VALUES (
