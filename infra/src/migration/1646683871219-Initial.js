@@ -41,49 +41,55 @@ module.exports = class Initial1646683871219 {
   async up(queryRunner) {
     // security group
     await queryRunner.query(`
-      INSERT INTO aws_security_group (description, group_name)
-      VALUES ('${PROJECT_NAME} security group', '${SECURITY_GROUP}');
+      BEGIN;
+        INSERT INTO aws_security_group (description, group_name)
+        VALUES ('${PROJECT_NAME} security group', '${SECURITY_GROUP}');
 
-      INSERT INTO aws_security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
-      SELECT false, 'tcp', ${PORT}, ${PORT}, '0.0.0.0/0', '${SECURITY_GROUP}', id
-      FROM aws_security_group
-      WHERE group_name = '${SECURITY_GROUP}';
+        INSERT INTO aws_security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
+        SELECT false, 'tcp', ${PORT}, ${PORT}, '0.0.0.0/0', '${SECURITY_GROUP}', id
+        FROM aws_security_group
+        WHERE group_name = '${SECURITY_GROUP}';
 
-      INSERT INTO aws_security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
-      SELECT true, 'tcp', 443, 443, '0.0.0.0/0', '${SECURITY_GROUP}', id
-      FROM aws_security_group
-      WHERE group_name = '${SECURITY_GROUP}';
+        INSERT INTO aws_security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
+        SELECT true, 'tcp', 443, 443, '0.0.0.0/0', '${SECURITY_GROUP}', id
+        FROM aws_security_group
+        WHERE group_name = '${SECURITY_GROUP}';
+      COMMIT;
     `);
 
     // load balancer + cloudwatch
     // TODO replace SPs
     await queryRunner.query(`
-      INSERT INTO aws_target_group (target_group_name, target_type, protocol, port, vpc, health_check_path)
-      VALUES ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, '${DEFAULT_VPC}', '${TARGET_GROUP_HEALTH_PATH}');
-      call create_or_update_aws_load_balancer(
-        '${LOAD_BALANCER}', 'internet-facing', '${DEFAULT_VPC}', 'application', 'ipv4', array['${SECURITY_GROUP}']
-      );
-      call create_or_update_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
-      INSERT INTO log_group (log_group_name)
-      VALUES ('${LOG_GROUP}');
+      BEGIN;
+        INSERT INTO aws_target_group (target_group_name, target_type, protocol, port, vpc, health_check_path)
+        VALUES ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, '${DEFAULT_VPC}', '${TARGET_GROUP_HEALTH_PATH}');
+        CALL create_or_update_aws_load_balancer(
+          '${LOAD_BALANCER}', 'internet-facing', '${DEFAULT_VPC}', 'application', 'ipv4', array['${SECURITY_GROUP}']
+        );
+        CALL create_or_update_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
+        INSERT INTO log_group (log_group_name)
+        VALUES ('${LOG_GROUP}');
+      COMMIT;
     `);
 
     // container (ECR + ECS)
     await queryRunner.query(`
-      INSERT INTO aws_public_repository (repository_name) VALUES ('${REPOSITORY}');
+      BEGIN;
+        INSERT INTO aws_public_repository (repository_name) VALUES ('${REPOSITORY}');
 
-      INSERT INTO aws_cluster (cluster_name) VALUES('${CLUSTER}');
+        INSERT INTO aws_cluster (cluster_name) VALUES('${CLUSTER}');
 
-      INSERT INTO aws_task_definition ("family", cpu_memory) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
+        INSERT INTO aws_task_definition ("family", cpu_memory) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
 
-      INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
-      VALUES (
-        '${CONTAINER}',
-        (select id from aws_public_repository where repository_name = '${REPOSITORY}' limit 1),
-        (select id from aws_task_definition where family = '${TASK_DEF_REPO_FAMILY}' and status is null limit 1),
-        (select id from log_group where log_group_name = '${LOG_GROUP}' limit 1),
-        '${IMAGE_TAG}', ${CONTAINER_ESSENTIAL}, ${CONTAINER_MEM_RESERVATION}, ${HOST_PORT}, ${CONTAINER_PORT}, '${PROTOCOL.toLowerCase()}'
-      );
+        INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
+        VALUES (
+          '${CONTAINER}',
+          (select id from aws_public_repository where repository_name = '${REPOSITORY}' limit 1),
+          (select id from aws_task_definition where family = '${TASK_DEF_REPO_FAMILY}' and status is null limit 1),
+          (select id from log_group where log_group_name = '${LOG_GROUP}' limit 1),
+          '${IMAGE_TAG}', ${CONTAINER_ESSENTIAL}, ${CONTAINER_MEM_RESERVATION}, ${HOST_PORT}, ${CONTAINER_PORT}, '${PROTOCOL.toLowerCase()}'
+        );
+      COMMIT;
     `);
 
     // create ECS service and associate it to security group
@@ -150,10 +156,12 @@ module.exports = class Initial1646683871219 {
 
     // delete security groups
     await queryRunner.query(`
-      DELETE FROM aws_security_group_rule
-      USING aws_security_group
-      WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
-      DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
+      BEGIN;
+        DELETE FROM aws_security_group_rule
+        USING aws_security_group
+        WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
+        DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
+      COMMIT;
     `);
   }
 }
