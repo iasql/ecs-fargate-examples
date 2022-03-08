@@ -62,20 +62,24 @@ module.exports = class Initial1646683871219 {
             (target_group_name, target_type, protocol, port, vpc, health_check_path)
         VALUES
             ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, 'default', '/health');
+
         INSERT INTO aws_load_balancer
             (load_balancer_name, scheme, vpc, load_balancer_type, ip_address_type)
         VALUES
             ('${LOAD_BALANCER}', 'internet-facing', 'default', 'application', 'ipv4');
+
         INSERT INTO aws_load_balancer_security_groups
             (aws_load_balancer_id, aws_security_group_id)
         VALUES
             ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
               (SELECT id FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}' LIMIT 1));
+
         INSERT INTO aws_listener
             (aws_load_balancer_id, port, protocol, action_type, target_group_id)
         VALUES
             ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
               ${PORT}, 'HTTP', 'forward', (SELECT id FROM aws_target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1));
+
         INSERT INTO log_group (log_group_name)
         VALUES ('${LOG_GROUP}');
       COMMIT;
@@ -182,6 +186,7 @@ module.exports = class Initial1646683871219 {
         DELETE FROM aws_security_group_rule
         USING aws_security_group
         WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
+
         DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
       COMMIT;
     `);
