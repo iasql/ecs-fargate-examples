@@ -70,14 +70,11 @@ module.exports = class Initial1646683871219 {
 
     // container (ECR + ECS)
     await queryRunner.query(`
-      INSERT INTO aws_public_repository (repository_name)
-      VALUES ('${REPOSITORY}');
+      INSERT INTO aws_public_repository (repository_name) VALUES ('${REPOSITORY}');
 
-      INSERT INTO aws_cluster (cluster_name)
-      VALUES('${CLUSTER}');
+      INSERT INTO aws_cluster (cluster_name) VALUES('${CLUSTER}');
 
-      INSERT INTO aws_task_definition ("family", cpu_memory)
-      VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
+      INSERT INTO aws_task_definition ("family", cpu_memory) VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
 
       INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
       VALUES (
@@ -119,35 +116,44 @@ module.exports = class Initial1646683871219 {
         USING aws_service
         WHERE name = '${SERVICE}';
 
-        DELETE FROM aws_service
-        WHERE name = '${SERVICE}';
+        DELETE FROM aws_service WHERE name = '${SERVICE}';
       COMMIT;
+    `);
+
+    // delete ELB + Cloudwatch
+    // TODO replace SPs
+    await queryRunner.query(`
+      CALL delete_aws_listener('${LOAD_BALANCER}', ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
+      CALL delete_aws_load_balancer('${LOAD_BALANCER}');
+      CALL delete_aws_target_group('${TARGET_GROUP}');
+      DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
     `);
 
     // delete ECS + ECR
     await queryRunner.query(`    
       BEGIN;
         DELETE FROM aws_container_definition
-        using aws_task_definition
+        USING aws_task_definition
         WHERE aws_container_definition.task_definition_id = aws_task_definition.id and aws_task_definition.family = '${TASK_DEF_REPO_FAMILY}';
 
-        DELETE FROM aws_task_definition
-        WHERE family = '${TASK_DEF_REPO_FAMILY}';
+        DELETE FROM aws_container_definition
+        USING aws_public_repository
+        WHERE aws_container_definition.public_repository_id = aws_public_repository.id and aws_public_repository.repository_name = '${REPOSITORY}';
 
-        DELETE FROM aws_cluster
-        WHERE cluster_name = '${CLUSTER}';
+        DELETE FROM aws_task_definition WHERE family = '${TASK_DEF_REPO_FAMILY}';
 
-        DELETE FROM aws_public_repository
-        WHERE repository_name = '${REPOSITORY}';
+        DELETE FROM aws_cluster WHERE cluster_name = '${CLUSTER}';
+
+        DELETE FROM aws_public_repository WHERE repository_name = '${REPOSITORY}';
       COMMIT;
     `);
 
-    // delete ELB
-    // TODO replace SPs
-    await queryRunner.query(`   
-      call delete_aws_listener(${LOAD_BALANCER}, ${PORT}, 'HTTP', 'forward', ${TARGET_GROUP});
-      call delete_aws_load_balancer(${LOAD_BALANCER});
-      call delete_aws_target_group(${TARGET_GROUP});
+    // delete security groups
+    await queryRunner.query(`
+      DELETE FROM aws_security_group_rule
+      USING aws_security_group
+      WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
+      DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
     `);
   }
 }
