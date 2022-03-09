@@ -12,10 +12,7 @@ const TASK_DEF_FAMILY = `${PROJECT_NAME}-td`;
 const SERVICE_DESIRED_COUNT = 1;
 const IMAGE_TAG = 'latest';
 const CONTAINER = `${PROJECT_NAME}-container`;
-const CONTAINER_ESSENTIAL = true;
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB
-const CONTAINER_PORT = 6379;
-const HOST_PORT = 6379;
 const PROTOCOL = 'TCP';
 const CLUSTER = `${PROJECT_NAME}-cluster`;
 const SERVICE = `${PROJECT_NAME}-service`;
@@ -91,13 +88,13 @@ module.exports = class Initial1646683871219 {
         INSERT INTO aws_task_definition ("family", cpu_memory)
         VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
 
-        INSERT INTO aws_container_definition ("name", public_repository_id, task_definition_id, log_group_id, tag, essential, memory_reservation, host_port, container_port, protocol)
+        INSERT INTO aws_container_definition ("name", essential, public_repository_id, task_definition_id, log_group_id, tag, memory_reservation, host_port, container_port, protocol)
         VALUES (
-          '${CONTAINER}',
+          '${CONTAINER}', true,
           (select id from aws_public_repository where repository_name = '${REPOSITORY}' limit 1),
           (select id from aws_task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
           (select id from log_group where log_group_name = '${LOG_GROUP}' limit 1),
-          '${IMAGE_TAG}', ${CONTAINER_ESSENTIAL}, ${CONTAINER_MEM_RESERVATION}, ${HOST_PORT}, ${CONTAINER_PORT}, '${PROTOCOL.toLowerCase()}'
+          '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}'
         );
       COMMIT;
     `);
