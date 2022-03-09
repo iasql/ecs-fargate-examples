@@ -144,7 +144,7 @@ module.exports = class Initial1646683871219 {
       COMMIT;
     `);
 
-    // delete ELB + Cloudwatch
+    // delete ELB
     await queryRunner.query(`
       BEGIN;
         DELETE FROM aws_listener
