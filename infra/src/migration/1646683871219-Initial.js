@@ -25,9 +25,6 @@ const PORT = 8088;
 const TARGET_GROUP = `${PROJECT_NAME}-target`;
 const LOAD_BALANCER = `${PROJECT_NAME}-load-balancer`;
 
-// AWS CLOUD WATCH
-const LOG_GROUP = `${PROJECT_NAME}-log-group`;
-
 module.exports = class Initial1646683871219 {
 
   // make sure the correct iasql modules are installed or the tables won't exist
@@ -51,7 +48,7 @@ module.exports = class Initial1646683871219 {
       COMMIT;
     `);
 
-    // load balancer + cloudwatch
+    // load balancer
     await queryRunner.query(`
       BEGIN;
         INSERT INTO aws_target_group
@@ -88,12 +85,11 @@ module.exports = class Initial1646683871219 {
         INSERT INTO aws_task_definition ("family", cpu_memory)
         VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
 
-        INSERT INTO aws_container_definition ("name", essential, public_repository_id, task_definition_id, log_group_id, tag, memory_reservation, host_port, container_port, protocol)
+        INSERT INTO aws_container_definition ("name", essential, public_repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
         VALUES (
           '${CONTAINER}', true,
           (select id from aws_public_repository where repository_name = '${REPOSITORY}' limit 1),
           (select id from aws_task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
-          (select id from log_group where log_group_name = '${LOG_GROUP}' limit 1),
           '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}'
         );
       COMMIT;
