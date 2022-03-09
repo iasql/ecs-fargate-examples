@@ -11,7 +11,6 @@ const TASK_DEF_RESOURCES = '2vCPU-8GB'; // aws_task_definition_cpu_memory enum
 const TASK_DEF_FAMILY = `${PROJECT_NAME}-td`;
 const SERVICE_DESIRED_COUNT = 1;
 const IMAGE_TAG = 'latest';
-const TASK_DEF_REPO_FAMILY = `${PROJECT_NAME}-tdrepo`;
 const CONTAINER = `${PROJECT_NAME}-container`;
 const CONTAINER_ESSENTIAL = true;
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB
@@ -49,7 +48,7 @@ module.exports = class Initial1646683871219 {
         WHERE group_name = '${SECURITY_GROUP}';
 
         INSERT INTO aws_security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
-        SELECT true, 'tcp', 443, 443, '0.0.0.0/0', '${SECURITY_GROUP}', id
+        SELECT true, '-1', -1, -1, '0.0.0.0/0', '${SECURITY_GROUP}', id
         FROM aws_security_group
         WHERE group_name = '${SECURITY_GROUP}';
       COMMIT;
@@ -79,9 +78,6 @@ module.exports = class Initial1646683871219 {
         VALUES
             ((SELECT id FROM aws_load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
               ${PORT}, 'HTTP', 'forward', (SELECT id FROM aws_target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1));
-
-        INSERT INTO log_group (log_group_name)
-        VALUES ('${LOG_GROUP}');
       COMMIT;
     `);
 
@@ -99,7 +95,7 @@ module.exports = class Initial1646683871219 {
         VALUES (
           '${CONTAINER}',
           (select id from aws_public_repository where repository_name = '${REPOSITORY}' limit 1),
-          (select id from aws_task_definition where family = '${TASK_DEF_REPO_FAMILY}' and status is null limit 1),
+          (select id from aws_task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
           (select id from log_group where log_group_name = '${LOG_GROUP}' limit 1),
           '${IMAGE_TAG}', ${CONTAINER_ESSENTIAL}, ${CONTAINER_MEM_RESERVATION}, ${HOST_PORT}, ${CONTAINER_PORT}, '${PROTOCOL.toLowerCase()}'
         );
@@ -114,7 +110,7 @@ module.exports = class Initial1646683871219 {
           '${SERVICE}', ${SERVICE_DESIRED_COUNT}, 'ENABLED',
           (select array(select subnet_id from aws_subnet inner join aws_vpc on aws_vpc.id = aws_subnet.vpc_id where is_default = true limit 3)),
           (select id from aws_cluster where cluster_name = '${CLUSTER}'),
-          (select id from aws_task_definition where family = '${TASK_DEF_REPO_FAMILY}' order by revision desc limit 1),
+          (select id from aws_task_definition where family = '${TASK_DEF_FAMILY}' order by revision desc limit 1),
           (select id from aws_target_group where target_group_name = '${TARGET_GROUP}' limit 1)
         );
 
@@ -145,13 +141,9 @@ module.exports = class Initial1646683871219 {
       BEGIN;
         DELETE FROM aws_container_definition
         USING aws_task_definition
-        WHERE aws_container_definition.task_definition_id = aws_task_definition.id and aws_task_definition.family = '${TASK_DEF_REPO_FAMILY}';
+        WHERE aws_container_definition.task_definition_id = aws_task_definition.id and aws_task_definition.family = '${TASK_DEF_FAMILY}';
 
-        DELETE FROM aws_container_definition
-        USING aws_public_repository
-        WHERE aws_container_definition.public_repository_id = aws_public_repository.id and aws_public_repository.repository_name = '${REPOSITORY}';
-
-        DELETE FROM aws_task_definition WHERE family = '${TASK_DEF_REPO_FAMILY}';
+        DELETE FROM aws_task_definition WHERE family = '${TASK_DEF_FAMILY}';
 
         DELETE FROM aws_cluster WHERE cluster_name = '${CLUSTER}';
 
@@ -175,8 +167,6 @@ module.exports = class Initial1646683871219 {
 
         DELETE FROM aws_target_group
         WHERE target_group_name = '${TARGET_GROUP}';
-
-        DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
       COMMIT;
     `);
 
