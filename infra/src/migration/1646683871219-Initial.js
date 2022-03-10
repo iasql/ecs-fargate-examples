@@ -5,7 +5,7 @@ function randomIntFromInterval(min, max) { // min and max included
 }
 
 // TODO replace with your desired project name
-const PROJECT_NAME = `${pkg.name}-${randomIntFromInterval(1, 99)}`
+const PROJECT_NAME = `${pkg.name}${randomIntFromInterval(1, 99)}`
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
 const REPOSITORY = `${PROJECT_NAME}-repository}`;
