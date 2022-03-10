@@ -1,13 +1,14 @@
 const pkg = require('../../package.json');
-// TODO replace with your desired project name
-const PROJECT_NAME = pkg.name;
 
 function randomIntFromInterval(min, max) { // min and max included
   return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
+// TODO replace with your desired project name
+const PROJECT_NAME = `${pkg.name}-${randomIntFromInterval(1, 99)}`
+
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
-const REPOSITORY = `${PROJECT_NAME}-repository-${randomIntFromInterval(1, 99)}`;
+const REPOSITORY = `${PROJECT_NAME}-repository}`;
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
