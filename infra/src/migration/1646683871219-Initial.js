@@ -1,7 +1,6 @@
 const pkg = require('../../package.json');
-
 // TODO replace with your desired project name
-const PROJECT_NAME = `${pkg.name}`
+const PROJECT_NAME = pkg.name;
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
 const region = !process.env.AWS_REGION ? '' : `-${process.env.AWS_REGION}`;
