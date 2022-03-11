@@ -3,7 +3,8 @@ const pkg = require('../../package.json');
 const PROJECT_NAME = pkg.name;
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
-const REPOSITORY = `${PROJECT_NAME}-repository`;
+const region = !process.env.AWS_REGION ? '' : `-${process.env.AWS_REGION}`;
+const REPOSITORY = `${PROJECT_NAME}-repository${region}`;
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
