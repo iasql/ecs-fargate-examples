@@ -8,7 +8,7 @@ function randomIntFromInterval(min, max) { // min and max included
 const PROJECT_NAME = `${pkg.name}${randomIntFromInterval(1, 99)}`
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
-const REPOSITORY = `${PROJECT_NAME}-repository}`;
+const REPOSITORY = `${PROJECT_NAME}-repository`;
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
