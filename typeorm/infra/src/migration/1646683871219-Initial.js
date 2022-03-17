@@ -165,14 +165,14 @@ module.exports = class Initial1646683871219 {
     `);
 
     // delete security groups
-    await queryRunner.query(`
-      BEGIN;
-        DELETE FROM aws_security_group_rule
-        USING aws_security_group
-        WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
+    // await queryRunner.query(`
+    //   BEGIN;
+    //     DELETE FROM aws_security_group_rule
+    //     USING aws_security_group
+    //     WHERE aws_security_group.id = aws_security_group_rule.security_group_id AND aws_security_group.group_name = '${SECURITY_GROUP}';
 
-        DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
-      COMMIT;
-    `);
+    //     DELETE FROM aws_security_group WHERE group_name = '${SECURITY_GROUP}';
+    //   COMMIT;
+    // `);
   }
 }
