@@ -6,7 +6,7 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
-
+from django.contrib.postgres.fields import ArrayField
 
 class AwsAccount(models.Model):
     access_key_id = models.TextField()
@@ -267,9 +267,9 @@ class Service(models.Model):
     arn = models.TextField(blank=True, null=True)
     status = models.TextField(blank=True, null=True)
     desired_count = models.IntegerField()
-    subnets = models.TextField()  # This field type is a guess.
+    subnets = ArrayField(models.TextField())
     assign_public_ip = models.TextField()  # This field type is a guess.
-    force_new_deployment = models.BooleanField()
+    force_new_deployment = models.BooleanField(default=False)
     cluster = models.ForeignKey(Cluster, models.DO_NOTHING, blank=True, null=True)
     task_definition = models.ForeignKey('TaskDefinition', models.DO_NOTHING, blank=True, null=True)
     target_group = models.ForeignKey('TargetGroup', models.DO_NOTHING, blank=True, null=True)
