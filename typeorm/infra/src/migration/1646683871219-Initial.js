@@ -113,6 +113,11 @@ module.exports = class Initial1646683871219 {
         );
       COMMIT;
     `);
+
+    // apply the changes
+    await queryRunner.query(`
+      CALL iasql_apply();
+    `);
   }
 
   // order matters
@@ -171,6 +176,11 @@ module.exports = class Initial1646683871219 {
 
         DELETE FROM security_group WHERE group_name = '${SECURITY_GROUP}';
       COMMIT;
+    `);
+
+    // apply the changes
+    await queryRunner.query(`
+      CALL iasql_apply();
     `);
   }
 }
