@@ -28,8 +28,6 @@ const LOAD_BALANCER = `${PROJECT_NAME}-load-balancer`;
 
 module.exports = class Initial1646683871219 {
 
-  // make sure the correct iasql modules are installed or the tables won't exist
-  // this will be easier once we have https://github.com/iasql/iasql-engine/issues/468
   async up(queryRunner) {
     // security group
     await queryRunner.query(`
