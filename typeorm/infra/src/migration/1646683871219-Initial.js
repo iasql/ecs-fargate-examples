@@ -116,7 +116,7 @@ module.exports = class Initial1646683871219 {
 
     // apply the changes
     await queryRunner.query(`
-      CALL iasql_apply();
+      SELECT iasql_apply();
     `);
   }
 
@@ -180,7 +180,7 @@ module.exports = class Initial1646683871219 {
 
     // apply the changes
     await queryRunner.query(`
-      CALL iasql_apply();
+      SELECT iasql_apply();
     `);
   }
 }
