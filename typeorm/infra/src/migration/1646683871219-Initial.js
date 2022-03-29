@@ -8,7 +8,7 @@ const REPOSITORY = `${PROJECT_NAME}-repository${region}`;
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
-const TASK_DEF_RESOURCES = '2vCPU-8GB'; // task_definition_cpu_memory enum
+const TASK_DEF_RESOURCES = 'vCPU2-8GB'; // task_definition_cpu_memory enum
 const TASK_DEF_FAMILY = `${PROJECT_NAME}-td`;
 const SERVICE_DESIRED_COUNT = 1;
 const IMAGE_TAG = 'latest';
