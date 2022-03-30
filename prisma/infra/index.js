@@ -28,28 +28,6 @@ async function main() {
     INSERT INTO security_group_rule (is_egress, ip_protocol, from_port, to_port, cidr_ipv4, description, security_group_id)
     VALUES (true, '-1', -1, -1, '0.0.0.0/0', '${PROJECT_NAME}-security-group', ${sg.id});
   `);
-  /*await prisma.security_group_rule.createMany({
-    data: [
-      {
-        is_egress: false,
-        ip_protocol: 'tcp',
-        from_port: PORT,
-        to_port: PORT,
-        cidr_ipv4: '0.0.0.0/0',
-        description: `${PROJECT_NAME}-security-group`,
-        security_group_id: sg.id,
-      },
-      {
-        is_egress: true,
-        ip_protocol: '-1',
-        from_port: -1,
-        to_port: -1,
-        cidr_ipv4: '0.0.0.0/0',
-        description: `${PROJECT_NAME}-security-group`,
-        security_group_id: sg.id,
-      },
-    ]
-  })*/
 
   // AWS ELASTIC LOAD BALANCER
   const tg = await prisma.target_group.create({
