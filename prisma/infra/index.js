@@ -132,8 +132,8 @@ async function main() {
     }
   });
 
-  // const apply = await prisma.$queryRaw`SELECT * from iasql_apply();`
-  // console.dir(apply)
+  const apply = await prisma.$queryRaw`SELECT * from iasql_apply();`
+  console.dir(apply)
 }
 
 main()
