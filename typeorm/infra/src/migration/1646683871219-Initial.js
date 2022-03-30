@@ -8,7 +8,7 @@ const REPOSITORY = `${PROJECT_NAME}-repository${region}`;
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
-const TASK_DEF_RESOURCES = '2vCPU-8GB'; // task_definition_cpu_memory enum
+const TASK_DEF_RESOURCES = 'vCPU2-8GB'; // task_definition_cpu_memory enum
 const TASK_DEF_FAMILY = `${PROJECT_NAME}-td`;
 const SERVICE_DESIRED_COUNT = 1;
 const IMAGE_TAG = 'latest';
@@ -28,8 +28,6 @@ const LOAD_BALANCER = `${PROJECT_NAME}-load-balancer`;
 
 module.exports = class Initial1646683871219 {
 
-  // make sure the correct iasql modules are installed or the tables won't exist
-  // this will be easier once we have https://github.com/iasql/iasql-engine/issues/468
   async up(queryRunner) {
     // security group
     await queryRunner.query(`
@@ -115,6 +113,11 @@ module.exports = class Initial1646683871219 {
         );
       COMMIT;
     `);
+
+    // apply the changes
+    await queryRunner.query(`
+      SELECT * FROM iasql_apply();
+    `);
   }
 
   // order matters
@@ -173,6 +176,11 @@ module.exports = class Initial1646683871219 {
 
         DELETE FROM security_group WHERE group_name = '${SECURITY_GROUP}';
       COMMIT;
+    `);
+
+    // apply the changes
+    await queryRunner.query(`
+      SELECT * FROM iasql_apply();
     `);
   }
 }
