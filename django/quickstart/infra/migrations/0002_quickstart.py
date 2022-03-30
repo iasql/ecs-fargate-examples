@@ -12,7 +12,7 @@ from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetG
 env_var = os.environ
 
 # TODO replace with your desired project name
-PROJECT_NAME = settings.PROJECT_NAME
+PROJECT_NAME = settings.IASQL_PROJECT_NAME
 
 # AWS ELASTIC CONTAINER REPOSITORY (ECR)
 REGION = f"-{env_var['AWS_REGION']}" if env_var['AWS_REGION'] is not None else ""

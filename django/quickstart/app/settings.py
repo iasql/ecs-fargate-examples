@@ -25,7 +25,8 @@ SECRET_KEY = 'none'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['0.0.0.0', 'quickstart-load-balancer-1293240291.us-east-2.elb.amazonaws.com']
+# SECURITY WARNING: filter your allowed hosts in production!
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -79,10 +80,10 @@ DATABASES = {
     },
     'infra': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'infra',
-        'USER': 'postgres',
+        'NAME': environ.get('DB_NAME'),
+        'USER': environ.get('DB_USER'),
         'PASSWORD': environ.get('DB_PASSWORD'),
-        'HOST': 'localhost',
+        'HOST': 'db.iasql.com',
         'PORT': '5432',
     }
 }
@@ -128,4 +129,4 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-PROJECT_NAME = "quickstart"
+IASQL_PROJECT_NAME = "quickstart"
