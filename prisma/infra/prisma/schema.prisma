@@ -1,0 +1,597 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model aws_account {
+  id                Int    @id(map: "PK_9ad897024d8c36c541d7fe84084") @default(autoincrement())
+  access_key_id     String @db.VarChar
+  secret_access_key String @db.VarChar
+  region            String @db.VarChar
+}
+
+model cluster {
+  id             Int       @id(map: "PK_b09d39b9491ce5cb1e8407761fd") @default(autoincrement())
+  cluster_name   String    @unique(map: "UQ_45ffb6495d51fdc55df46102ce7") @db.VarChar
+  cluster_arn    String?   @db.VarChar
+  cluster_status String?   @db.VarChar
+  service        service[]
+}
+
+model container_definition {
+  id                   Int                                 @id(map: "PK_79458e199ec6b2264a0735fd99e") @default(autoincrement())
+  name                 String                              @db.VarChar
+  image                String?                             @db.VarChar
+  tag                  String?                             @db.VarChar
+  digest               String?                             @db.VarChar
+  essential            Boolean                             @default(false)
+  cpu                  Int?
+  memory               Int?
+  memory_reservation   Int?
+  host_port            Int?
+  container_port       Int?
+  protocol             container_definition_protocol_enum?
+  env_variables        String?
+  task_definition_id   Int?
+  repository_id        Int?
+  public_repository_id Int?
+  log_group_id         Int?
+  log_group            log_group?                          @relation(fields: [log_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_88e7fb5cc14188b19b08d7e305d")
+  public_repository    public_repository?                  @relation(fields: [public_repository_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_de350ceda5a3f4f5f8786518e6f")
+  repository           repository?                         @relation(fields: [repository_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c0c1887e471b1f7c33007a2f420")
+  task_definition      task_definition?                    @relation(fields: [task_definition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_95900c2acc0286c7976d9b729b2")
+}
+
+model iasql_dependencies {
+  module                                                   String       @db.VarChar
+  dependency                                               String       @db.VarChar
+  iasql_module_iasql_dependencies_dependencyToiasql_module iasql_module @relation("iasql_dependencies_dependencyToiasql_module", fields: [dependency], references: [name], onDelete: Cascade, map: "FK_7dbdaef2c45fdd0d1d82cc9568c")
+  iasql_module_iasql_dependencies_moduleToiasql_module     iasql_module @relation("iasql_dependencies_moduleToiasql_module", fields: [module], references: [name], onDelete: Cascade, map: "FK_9732df6d7dff34b6f6a1732033b")
+
+  @@id([module, dependency], map: "PK_b07797cfc364fa84b6da165f89d")
+  @@index([dependency], map: "IDX_7dbdaef2c45fdd0d1d82cc9568")
+  @@index([module], map: "IDX_9732df6d7dff34b6f6a1732033")
+}
+
+model iasql_module {
+  name                                                           String               @id(map: "PK_e91a0b0e9a029428405fdd17ee4") @db.VarChar
+  iasql_dependencies_iasql_dependencies_dependencyToiasql_module iasql_dependencies[] @relation("iasql_dependencies_dependencyToiasql_module")
+  iasql_dependencies_iasql_dependencies_moduleToiasql_module     iasql_dependencies[] @relation("iasql_dependencies_moduleToiasql_module")
+  iasql_tables                                                   iasql_tables[]
+}
+
+model iasql_operation {
+  opid       String                      @id(map: "PK_edf11c327fef1bf78dd04cdf3ce") @db.Uuid
+  start_date DateTime                    @default(now()) @db.Timestamptz(6)
+  end_date   DateTime?                   @db.Timestamptz(6)
+  optype     iasql_operation_optype_enum
+  params     String[]
+  output     String?
+  err        String?
+}
+
+model iasql_tables {
+  table        String       @db.VarChar
+  module       String       @db.VarChar
+  iasql_module iasql_module @relation(fields: [module], references: [name], onDelete: NoAction, onUpdate: NoAction, map: "FK_0e0f2a4ef99e93cfcb935c060cb")
+
+  @@id([table, module], map: "PK_2e2832f9cf90115571eb803a943")
+}
+
+model instance {
+  id                       Int                        @id(map: "PK_eaf60e4a0c399c9935413e06474") @default(autoincrement())
+  instance_id              String?                    @db.VarChar
+  ami                      String                     @db.VarChar
+  name                     String                     @unique(map: "UQ_7517ace937bf54b1902089eedf0") @db.VarChar
+  instance_type            String                     @db.VarChar
+  instance_security_groups instance_security_groups[]
+}
+
+model instance_security_groups {
+  instance_id       Int
+  security_group_id Int
+  instance          instance       @relation(fields: [instance_id], references: [id], onDelete: Cascade, map: "FK_fa3c179d5090cb1309c63b5e20a")
+  security_group    security_group @relation(fields: [security_group_id], references: [id], onDelete: Cascade, map: "FK_b3b92934eff56d2eb0477a1d27f")
+
+  @@id([instance_id, security_group_id], map: "PK_8045eb55d2a16cf6e4cf80e7ee5")
+  @@index([security_group_id], map: "IDX_b3b92934eff56d2eb0477a1d27")
+  @@index([instance_id], map: "IDX_fa3c179d5090cb1309c63b5e20")
+}
+
+model listener {
+  id               Int                       @id(map: "PK_422c9d250eb7b0c0b6c96cdce94") @default(autoincrement())
+  listener_arn     String?                   @db.VarChar
+  port             Int
+  protocol         listener_protocol_enum
+  action_type      listener_action_type_enum @default(forward)
+  load_balancer_id Int
+  target_group_id  Int?
+  load_balancer    load_balancer             @relation(fields: [load_balancer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_515921874a4505a3f4786aaad75")
+  target_group     target_group?             @relation(fields: [target_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_5c1fa345667a762a249d9398688")
+
+  @@unique([load_balancer_id, port], map: "UQ_load_balancer__port")
+}
+
+model load_balancer {
+  id                            Int                                   @id(map: "PK_602633aa1c4c1fbccc503e355b6") @default(autoincrement())
+  load_balancer_name            String                                @unique(map: "UQ_752cf6361c52a07bd00d9b7c4dd") @db.VarChar
+  load_balancer_arn             String?                               @db.VarChar
+  dns_name                      String?                               @db.VarChar
+  canonical_hosted_zone_id      String?                               @db.VarChar
+  created_time                  DateTime?                             @db.Timestamptz(6)
+  scheme                        load_balancer_scheme_enum
+  state                         load_balancer_state_enum?
+  load_balancer_type            load_balancer_load_balancer_type_enum
+  vpc                           String                                @db.VarChar
+  subnets                       String[]                              @db.VarChar
+  availability_zones            String[]                              @db.VarChar
+  ip_address_type               load_balancer_ip_address_type_enum
+  customer_owned_ipv4_pool      String?                               @db.VarChar
+  listener                      listener[]
+  load_balancer_security_groups load_balancer_security_groups[]
+}
+
+model load_balancer_security_groups {
+  load_balancer_id  Int
+  security_group_id Int
+  load_balancer     load_balancer  @relation(fields: [load_balancer_id], references: [id], onDelete: Cascade, map: "FK_b04ed8dca40b77dfa54096a4b6a")
+  security_group    security_group @relation(fields: [security_group_id], references: [id], onDelete: Cascade, map: "FK_4da7e08287b5693e5b22959ced4")
+
+  @@id([load_balancer_id, security_group_id], map: "PK_b6a290e33680aa3053e8992e2c3")
+  @@index([security_group_id], map: "IDX_4da7e08287b5693e5b22959ced")
+  @@index([load_balancer_id], map: "IDX_b04ed8dca40b77dfa54096a4b6")
+}
+
+model log_group {
+  id                   Int                    @id(map: "PK_98524f243181f6e4ef712642235") @default(autoincrement())
+  log_group_name       String                 @unique(map: "UQ_6d8521becbc3f536b29ee07dc57") @db.VarChar
+  log_group_arn        String?                @db.VarChar
+  creation_time        DateTime?              @db.Timestamptz(6)
+  container_definition container_definition[]
+}
+
+model public_repository {
+  id                   Int                    @id(map: "PK_a0332b1b7f4244bc3d82f12000a") @default(autoincrement())
+  repository_name      String                 @unique(map: "UQ_5a7e30211ae44944c8cd65711dd") @db.VarChar
+  repository_arn       String?                @db.VarChar
+  registry_id          String?                @db.VarChar
+  repository_uri       String?                @db.VarChar
+  created_at           DateTime?              @db.Timestamptz(6)
+  container_definition container_definition[]
+}
+
+model rds {
+  id                      Int                   @id(map: "PK_67d6c2133366c8eda49b40de7b0") @default(autoincrement())
+  db_instance_identifier  String                @unique(map: "UQ_7fb01956cebcabd694baf5f1f6b") @db.VarChar
+  allocated_storage       Int
+  availability_zone       String                @db.VarChar
+  db_instance_class       String                @db.VarChar
+  engine                  String                @db.VarChar
+  master_user_password    String?               @db.VarChar
+  master_username         String?               @db.VarChar
+  endpoint_addr           String?               @db.VarChar
+  endpoint_port           Int?
+  endpoint_hosted_zone_id String?               @db.VarChar
+  backup_retention_period Int                   @default(1)
+  rds_security_groups     rds_security_groups[]
+}
+
+model rds_security_groups {
+  rds_id            Int
+  security_group_id Int
+  rds               rds            @relation(fields: [rds_id], references: [id], onDelete: Cascade, map: "FK_a1927b280e2770235e52a9e0fb1")
+  security_group    security_group @relation(fields: [security_group_id], references: [id], onDelete: Cascade, map: "FK_a4080f9f7f3fa99ac9d68dd910a")
+
+  @@id([rds_id, security_group_id], map: "PK_a0b5fa8fc927a6d22d5e2125e86")
+  @@index([rds_id], map: "IDX_a1927b280e2770235e52a9e0fb")
+  @@index([security_group_id], map: "IDX_a4080f9f7f3fa99ac9d68dd910")
+}
+
+model repository {
+  id                   Int                                  @id(map: "PK_b842c26651c6fc0b9ccd1c530e2") @default(autoincrement())
+  repository_name      String                               @unique(map: "UQ_8845a838de662324047b4a9bdd6") @db.VarChar
+  repository_arn       String?                              @db.VarChar
+  registry_id          String?                              @db.VarChar
+  repository_uri       String?                              @db.VarChar
+  created_at           DateTime?                            @db.Timestamptz(6)
+  image_tag_mutability repository_image_tag_mutability_enum @default(MUTABLE)
+  scan_on_push         Boolean                              @default(false)
+  container_definition container_definition[]
+  repository_policy    repository_policy?
+}
+
+model repository_policy {
+  id            Int        @id(map: "PK_14f3e653f2de6dd234051222769") @default(autoincrement())
+  registry_id   String?    @db.VarChar
+  policy_text   String?    @db.VarChar
+  repository_id Int        @unique(map: "REL_d3c217e991e59f7680624ccd1d")
+  repository    repository @relation(fields: [repository_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_d3c217e991e59f7680624ccd1d5")
+}
+
+model security_group {
+  id                            Int                             @id(map: "PK_08670ec0c305866dbfbfe004cb8") @default(autoincrement())
+  description                   String?                         @db.VarChar
+  group_name                    String?                         @db.VarChar
+  owner_id                      String?                         @db.VarChar
+  group_id                      String?                         @db.VarChar
+  vpc_id                        String?                         @db.VarChar
+  instance_security_groups      instance_security_groups[]
+  load_balancer_security_groups load_balancer_security_groups[]
+  rds_security_groups           rds_security_groups[]
+  security_group_rule           security_group_rule[]
+  service_security_groups       service_security_groups[]
+}
+
+model security_group_rule {
+  id                     Int                  @id(map: "PK_f4c5f95331113ce4a2e1978a076") @default(autoincrement())
+  security_group_rule_id String?              @db.VarChar
+  is_egress              Boolean
+  ip_protocol            String               @db.VarChar
+  from_port              Int?
+  to_port                Int?
+  cidr_ipv4              Unsupported("cidr")?
+  cidr_ipv6              Unsupported("cidr")?
+  prefix_list_id         String?              @db.VarChar
+  description            String?              @db.VarChar
+  security_group_id      Int?
+  security_group         security_group?      @relation(fields: [security_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_aebae570368c0606123496b0f90")
+
+  @@unique([is_egress, ip_protocol, from_port, to_port, cidr_ipv4, security_group_id], map: "UQ_rule")
+}
+
+model service {
+  id                      Int                           @id(map: "PK_85a21558c006647cd76fdce044b") @default(autoincrement())
+  name                    String                        @unique(map: "UQ_7806a14d42c3244064b4a1706ca") @db.VarChar
+  arn                     String?                       @db.VarChar
+  status                  String?                       @db.VarChar
+  desired_count           Int
+  subnets                 String[]
+  assign_public_ip        service_assign_public_ip_enum @default(DISABLED)
+  force_new_deployment    Boolean                       @default(false)
+  cluster_id              Int?
+  task_definition_id      Int?
+  target_group_id         Int?
+  cluster                 cluster?                      @relation(fields: [cluster_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b1570c701dd1adce1391f2f25e7")
+  target_group            target_group?                 @relation(fields: [target_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c8f480e0b98911299c6920e7184")
+  task_definition         task_definition?              @relation(fields: [task_definition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_4518e1b3072a8f68c3bc747338e")
+  service_security_groups service_security_groups[]
+}
+
+model service_security_groups {
+  service_id        Int
+  security_group_id Int
+  security_group    security_group @relation(fields: [security_group_id], references: [id], onDelete: Cascade, map: "FK_0407238e46717099da0443dff75")
+  service           service        @relation(fields: [service_id], references: [id], onDelete: Cascade, map: "FK_898ba6a6683e0f309aa8b47f466")
+
+  @@id([service_id, security_group_id], map: "PK_0986c453e31558a0df78054c409")
+  @@index([security_group_id], map: "IDX_0407238e46717099da0443dff7")
+  @@index([service_id], map: "IDX_898ba6a6683e0f309aa8b47f46")
+}
+
+model subnet {
+  id                         Int                           @id(map: "PK_27239a6d70e746b9ac33497a47f") @default(autoincrement())
+  availability_zone          subnet_availability_zone_enum
+  state                      subnet_state_enum?
+  available_ip_address_count Int?
+  cidr_block                 String?                       @db.VarChar
+  subnet_id                  String?                       @db.VarChar
+  owner_id                   String?                       @db.VarChar
+  subnet_arn                 String?                       @db.VarChar
+  vpc_id                     Int
+  vpc                        vpc                           @relation(fields: [vpc_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_6b5bf9e47cab22f2857019b8eaf")
+}
+
+model target_group {
+  id                            Int                                      @id(map: "PK_57d677c2f58ffc6255875625d4c") @default(autoincrement())
+  target_group_name             String                                   @unique(map: "UQ_1957da369918349223c6d3c01b0") @db.VarChar
+  target_type                   target_group_target_type_enum
+  target_group_arn              String?                                  @db.VarChar
+  ip_address_type               target_group_ip_address_type_enum?
+  protocol                      target_group_protocol_enum?
+  port                          Int?
+  vpc                           String                                   @db.VarChar
+  health_check_protocol         target_group_health_check_protocol_enum?
+  health_check_port             String?                                  @db.VarChar
+  health_check_enabled          Boolean?
+  health_check_interval_seconds Int?
+  health_check_timeout_seconds  Int?
+  healthy_threshold_count       Int?
+  unhealthy_threshold_count     Int?
+  health_check_path             String?                                  @db.VarChar
+  protocol_version              target_group_protocol_version_enum?
+  listener                      listener[]
+  service                       service[]
+}
+
+model task_definition {
+  id                   Int                              @id(map: "PK_35a67b870f083fc37a99867de7a") @default(autoincrement())
+  task_definition_arn  String?                          @db.VarChar
+  family               String                           @db.VarChar
+  revision             Int?
+  task_role_arn        String?                          @db.VarChar
+  execution_role_arn   String?                          @db.VarChar
+  status               task_definition_status_enum?
+  cpu_memory           task_definition_cpu_memory_enum?
+  container_definition container_definition[]
+  service              service[]
+}
+
+model vpc {
+  id         Int             @id(map: "PK_293725cf47b341e1edc38bd2075") @default(autoincrement())
+  vpc_id     String?         @db.VarChar
+  cidr_block String          @db.VarChar
+  state      vpc_state_enum?
+  is_default Boolean         @default(false)
+  subnet     subnet[]
+}
+
+enum container_definition_protocol_enum {
+  tcp
+  udp
+}
+
+enum iasql_operation_optype_enum {
+  APPLY
+  SYNC
+  INSTALL
+  UNINSTALL
+  PLAN_APPLY
+  PLAN_SYNC
+}
+
+enum listener_action_type_enum {
+  forward
+}
+
+enum listener_protocol_enum {
+  GENEVE
+  HTTP
+  HTTPS
+  TCP
+  TCP_UDP
+  TLS
+  UDP
+}
+
+enum load_balancer_ip_address_type_enum {
+  dualstack
+  ipv4
+}
+
+enum load_balancer_load_balancer_type_enum {
+  application
+  gateway
+  network
+}
+
+enum load_balancer_scheme_enum {
+  internal
+  internet_facing @map("internet-facing")
+}
+
+enum load_balancer_state_enum {
+  active
+  active_impaired
+  failed
+  provisioning
+}
+
+enum repository_image_tag_mutability_enum {
+  IMMUTABLE
+  MUTABLE
+}
+
+enum service_assign_public_ip_enum {
+  DISABLED
+  ENABLED
+}
+
+enum subnet_availability_zone_enum {
+  ap_northeast_1_wl1_kix_wlz_1 @map("ap-northeast-1-wl1-kix-wlz-1")
+  ap_northeast_1_wl1_nrt_wlz_1 @map("ap-northeast-1-wl1-nrt-wlz-1")
+  ap_northeast_1a @map("ap-northeast-1a")
+  ap_northeast_1c @map("ap-northeast-1c")
+  ap_northeast_1d @map("ap-northeast-1d")
+  ap_northeast_2_wl1_cjj_wlz_1 @map("ap-northeast-2-wl1-cjj-wlz-1")
+  ap_northeast_2a @map("ap-northeast-2a")
+  ap_northeast_2b @map("ap-northeast-2b")
+  ap_northeast_2c @map("ap-northeast-2c")
+  ap_northeast_2d @map("ap-northeast-2d")
+  ap_northeast_3a @map("ap-northeast-3a")
+  ap_northeast_3b @map("ap-northeast-3b")
+  ap_northeast_3c @map("ap-northeast-3c")
+  ap_south_1a @map("ap-south-1a")
+  ap_south_1b @map("ap-south-1b")
+  ap_south_1c @map("ap-south-1c")
+  ap_southeast_1a @map("ap-southeast-1a")
+  ap_southeast_1b @map("ap-southeast-1b")
+  ap_southeast_1c @map("ap-southeast-1c")
+  ap_southeast_2a @map("ap-southeast-2a")
+  ap_southeast_2b @map("ap-southeast-2b")
+  ap_southeast_2c @map("ap-southeast-2c")
+  ca_central_1a @map("ca-central-1a")
+  ca_central_1b @map("ca-central-1b")
+  ca_central_1d @map("ca-central-1d")
+  eu_central_1_wl1_ber_wlz_1 @map("eu-central-1-wl1-ber-wlz-1")
+  eu_central_1_wl1_dtm_wlz_1 @map("eu-central-1-wl1-dtm-wlz-1")
+  eu_central_1_wl1_muc_wlz_1 @map("eu-central-1-wl1-muc-wlz-1")
+  eu_central_1a @map("eu-central-1a")
+  eu_central_1b @map("eu-central-1b")
+  eu_central_1c @map("eu-central-1c")
+  eu_north_1a @map("eu-north-1a")
+  eu_north_1b @map("eu-north-1b")
+  eu_north_1c @map("eu-north-1c")
+  eu_west_1a @map("eu-west-1a")
+  eu_west_1b @map("eu-west-1b")
+  eu_west_1c @map("eu-west-1c")
+  eu_west_2_wl1_lon_wlz_1 @map("eu-west-2-wl1-lon-wlz-1")
+  eu_west_2a @map("eu-west-2a")
+  eu_west_2b @map("eu-west-2b")
+  eu_west_2c @map("eu-west-2c")
+  eu_west_3a @map("eu-west-3a")
+  eu_west_3b @map("eu-west-3b")
+  eu_west_3c @map("eu-west-3c")
+  sa_east_1a @map("sa-east-1a")
+  sa_east_1b @map("sa-east-1b")
+  sa_east_1c @map("sa-east-1c")
+  us_east_1_atl_1a @map("us-east-1-atl-1a")
+  us_east_1_bos_1a @map("us-east-1-bos-1a")
+  us_east_1_chi_1a @map("us-east-1-chi-1a")
+  us_east_1_dfw_1a @map("us-east-1-dfw-1a")
+  us_east_1_iah_1a @map("us-east-1-iah-1a")
+  us_east_1_mci_1a @map("us-east-1-mci-1a")
+  us_east_1_mia_1a @map("us-east-1-mia-1a")
+  us_east_1_msp_1a @map("us-east-1-msp-1a")
+  us_east_1_nyc_1a @map("us-east-1-nyc-1a")
+  us_east_1_phl_1a @map("us-east-1-phl-1a")
+  us_east_1_wl1_atl_wlz_1 @map("us-east-1-wl1-atl-wlz-1")
+  us_east_1_wl1_bos_wlz_1 @map("us-east-1-wl1-bos-wlz-1")
+  us_east_1_wl1_chi_wlz_1 @map("us-east-1-wl1-chi-wlz-1")
+  us_east_1_wl1_clt_wlz_1 @map("us-east-1-wl1-clt-wlz-1")
+  us_east_1_wl1_dfw_wlz_1 @map("us-east-1-wl1-dfw-wlz-1")
+  us_east_1_wl1_dtw_wlz_1 @map("us-east-1-wl1-dtw-wlz-1")
+  us_east_1_wl1_iah_wlz_1 @map("us-east-1-wl1-iah-wlz-1")
+  us_east_1_wl1_mia_wlz_1 @map("us-east-1-wl1-mia-wlz-1")
+  us_east_1_wl1_msp_wlz_1 @map("us-east-1-wl1-msp-wlz-1")
+  us_east_1_wl1_nyc_wlz_1 @map("us-east-1-wl1-nyc-wlz-1")
+  us_east_1_wl1_was_wlz_1 @map("us-east-1-wl1-was-wlz-1")
+  us_east_1a @map("us-east-1a")
+  us_east_1b @map("us-east-1b")
+  us_east_1c @map("us-east-1c")
+  us_east_1d @map("us-east-1d")
+  us_east_1e @map("us-east-1e")
+  us_east_1f @map("us-east-1f")
+  us_east_2a @map("us-east-2a")
+  us_east_2b @map("us-east-2b")
+  us_east_2c @map("us-east-2c")
+  us_west_1a @map("us-west-1a")
+  us_west_1b @map("us-west-1b")
+  us_west_1c @map("us-west-1c")
+  us_west_2_den_1a @map("us-west-2-den-1a")
+  us_west_2_las_1a @map("us-west-2-las-1a")
+  us_west_2_lax_1a @map("us-west-2-lax-1a")
+  us_west_2_lax_1b @map("us-west-2-lax-1b")
+  us_west_2_pdx_1a @map("us-west-2-pdx-1a")
+  us_west_2_phx_1a @map("us-west-2-phx-1a")
+  us_west_2_sea_1a @map("us-west-2-sea-1a")
+  us_west_2_wl1_den_wlz_1 @map("us-west-2-wl1-den-wlz-1")
+  us_west_2_wl1_las_wlz_1 @map("us-west-2-wl1-las-wlz-1")
+  us_west_2_wl1_lax_wlz_1 @map("us-west-2-wl1-lax-wlz-1")
+  us_west_2_wl1_phx_wlz_1 @map("us-west-2-wl1-phx-wlz-1")
+  us_west_2_wl1_sea_wlz_1 @map("us-west-2-wl1-sea-wlz-1")
+  us_west_2_wl1_sfo_wlz_1 @map("us-west-2-wl1-sfo-wlz-1")
+  us_west_2a @map("us-west-2a")
+  us_west_2b @map("us-west-2b")
+  us_west_2c @map("us-west-2c")
+  us_west_2d @map("us-west-2d")
+}
+
+enum subnet_state_enum {
+  available
+  pending
+}
+
+enum target_group_health_check_protocol_enum {
+  GENEVE
+  HTTP
+  HTTPS
+  TCP
+  TCP_UDP
+  TLS
+  UDP
+}
+
+enum target_group_ip_address_type_enum {
+  ipv4
+  ipv6
+}
+
+enum target_group_protocol_enum {
+  GENEVE
+  HTTP
+  HTTPS
+  TCP
+  TCP_UDP
+  TLS
+  UDP
+}
+
+enum target_group_protocol_version_enum {
+  GRPC
+  HTTP1
+  HTTP2
+}
+
+enum target_group_target_type_enum {
+  alb
+  instance
+  ip
+  lambda
+}
+
+enum task_definition_cpu_memory_enum {
+  vCPU0_25_0_5GB @map("vCPU0.25-0.5GB")
+  vCPU0_25_1GB @map("vCPU0.25-1GB")
+  vCPU0_25_2GB @map("vCPU0.25-2GB")
+  vCPU0_5_1GB @map("vCPU0.5-1GB")
+  vCPU0_5_2GB @map("vCPU0.5-2GB")
+  vCPU0_5_3GB @map("vCPU0.5-3GB")
+  vCPU0_5_4GB @map("vCPU0.5-4GB")
+  vCPU1_2GB @map("vCPU1-2GB")
+  vCPU1_3GB @map("vCPU1-3GB")
+  vCPU1_4GB @map("vCPU1-4GB")
+  vCPU1_5GB @map("vCPU1-5GB")
+  vCPU1_6GB @map("vCPU1-6GB")
+  vCPU1_7GB @map("vCPU1-7GB")
+  vCPU1_8GB @map("vCPU1-8GB")
+  vCPU2_4GB @map("vCPU2-4GB")
+  vCPU2_5GB @map("vCPU2-5GB")
+  vCPU2_6GB @map("vCPU2-6GB")
+  vCPU2_7GB @map("vCPU2-7GB")
+  vCPU2_8GB @map("vCPU2-8GB")
+  vCPU2_9GB @map("vCPU2-9GB")
+  vCPU2_10GB @map("vCPU2-10GB")
+  vCPU2_11GB @map("vCPU2-11GB")
+  vCPU2_12GB @map("vCPU2-12GB")
+  vCPU2_13GB @map("vCPU2-13GB")
+  vCPU2_14GB @map("vCPU2-14GB")
+  vCPU2_15GB @map("vCPU2-15GB")
+  vCPU2_16GB @map("vCPU2-16GB")
+  vCPU4_8GB @map("vCPU4-8GB")
+  vCPU4_9GB @map("vCPU4-9GB")
+  vCPU4_10GB @map("vCPU4-10GB")
+  vCPU4_11GB @map("vCPU4-11GB")
+  vCPU4_12GB @map("vCPU4-12GB")
+  vCPU4_13GB @map("vCPU4-13GB")
+  vCPU4_14GB @map("vCPU4-14GB")
+  vCPU4_15GB @map("vCPU4-15GB")
+  vCPU4_16GB @map("vCPU4-16GB")
+  vCPU4_17GB @map("vCPU4-17GB")
+  vCPU4_18GB @map("vCPU4-18GB")
+  vCPU4_19GB @map("vCPU4-19GB")
+  vCPU4_20GB @map("vCPU4-20GB")
+  vCPU4_21GB @map("vCPU4-21GB")
+  vCPU4_22GB @map("vCPU4-22GB")
+  vCPU4_23GB @map("vCPU4-23GB")
+  vCPU4_24GB @map("vCPU4-24GB")
+  vCPU4_25GB @map("vCPU4-25GB")
+  vCPU4_26GB @map("vCPU4-26GB")
+  vCPU4_27GB @map("vCPU4-27GB")
+  vCPU4_28GB @map("vCPU4-28GB")
+  vCPU4_29GB @map("vCPU4-29GB")
+  vCPU4_30GB @map("vCPU4-30GB")
+}
+
+enum task_definition_status_enum {
+  ACTIVE
+  INACTIVE
+}
+
+enum vpc_state_enum {
+  available
+  pending
+}
