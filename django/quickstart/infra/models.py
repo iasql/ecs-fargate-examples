@@ -51,6 +51,17 @@ class ContainerDefinition(models.Model):
         db_table = 'container_definition'
 
 
+class DjangoMigrations(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    app = models.TextField(max_length=255)
+    name = models.TextField(max_length=255)
+    applied = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'django_migrations'
+
+
 class IasqlDependencies(models.Model):
     module = models.OneToOneField('IasqlModule', models.DO_NOTHING, db_column='module', primary_key=True)
     dependency = models.ForeignKey('IasqlModule', models.DO_NOTHING, db_column='dependency', related_name='module')
@@ -91,27 +102,6 @@ class IasqlTables(models.Model):
         managed = False
         db_table = 'iasql_tables'
         unique_together = (('table', 'module'),)
-
-
-class Instance(models.Model):
-    instance_id = models.TextField(blank=True, null=True)
-    ami = models.TextField()
-    name = models.TextField(unique=True, )
-    instance_type = models.TextField()
-
-    class Meta:
-        managed = False
-        db_table = 'instance'
-
-
-class InstanceSecurityGroups(models.Model):
-    instance = models.OneToOneField(Instance, models.DO_NOTHING, primary_key=True)
-    security_group = models.ForeignKey('SecurityGroup', models.DO_NOTHING)
-
-    class Meta:
-        managed = False
-        db_table = 'instance_security_groups'
-        unique_together = (('instance', 'security_group'),)
 
 
 class Listener(models.Model):
