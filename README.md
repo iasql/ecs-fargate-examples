@@ -6,3 +6,4 @@ To illustrate all the different ways in which infrastructure can be managed with
 - [TypeORM (SQL ORM)](https://docs.iasql.com/typeorm/)
 - [Flyway (SQL)](https://docs.iasql.com/flyway/)
 - [Prisma (Javascript)](https://docs.iasql.com/prisma/)
+- [Django (Python)](https://docs.iasql.com/django/)
