@@ -4,13 +4,13 @@ module.exports = class Install1646683871211 {
   async up(queryRunner) {
     await queryRunner.query(`
       SELECT * FROM iasql_install(
-        'aws_vpc@0.0.1',
-        'aws_security_group@0.0.1',
-        'aws_elb@0.0.1',
-        'aws_cloudwatch@0.0.1',
-        'aws_ecr@0.0.1',
-        'aws_ecs_fargate@0.0.1',
-        'aws_rds@0.0.1'
+        'aws_vpc',
+        'aws_security_group',
+        'aws_elb',
+        'aws_cloudwatch',
+        'aws_ecr',
+        'aws_ecs_fargate',
+        'aws_rds'
       );
     `);
   }
@@ -18,13 +18,13 @@ module.exports = class Install1646683871211 {
   async down(queryRunner) {
     await queryRunner.query(`
       SELECT * FROM iasql_uninstall(
-        'aws_vpc@0.0.1',
-        'aws_security_group@0.0.1',
-        'aws_elb@0.0.1',
-        'aws_cloudwatch@0.0.1',
-        'aws_ecr@0.0.1',
-        'aws_ecs_fargate@0.0.1',
-        'aws_rds@0.0.1'
+        'aws_vpc',
+        'aws_security_group',
+        'aws_elb',
+        'aws_cloudwatch',
+        'aws_ecr',
+        'aws_ecs_fargate',
+        'aws_rds'
       );
     `);
   }
