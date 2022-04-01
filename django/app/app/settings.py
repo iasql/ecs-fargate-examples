@@ -14,12 +14,12 @@ from pathlib import Path
 import os
 import environ
 
-env = environ.Env()
+ENV = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'), overwrite=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -85,9 +85,9 @@ DATABASES = {
     },
     'infra': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
+        'NAME': ENV('DB_NAME'),
+        'USER': ENV('DB_USER'),
+        'PASSWORD': ENV('DB_PASSWORD'),
         'HOST': 'db.iasql.com',
         'PORT': '5432',
     }

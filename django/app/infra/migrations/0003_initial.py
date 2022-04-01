@@ -10,9 +10,10 @@ from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetG
 
 # TODO replace with your desired project name
 PROJECT_NAME = settings.IASQL_PROJECT_NAME
+ENV = settings.ENV
 
 # AWS ELASTIC CONTAINER REPOSITORY (ECR)
-REGION = f"-{settings.env('AWS_REGION')}" if settings.env('AWS_REGION') is not None else ""
+REGION = f"-{ENV('AWS_REGION')}" if ENV('AWS_REGION') is not None else ""
 REPOSITORY = f"{PROJECT_NAME}-repository{REGION}"
 
 # AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
