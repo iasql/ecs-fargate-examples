@@ -11,11 +11,15 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
-from os import environ
+import os
+import environ
 
+env = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -81,9 +85,9 @@ DATABASES = {
     },
     'infra': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': environ['DB_NAME'],
-        'USER': environ['DB_USER'],
-        'PASSWORD': environ['DB_PASSWORD'],
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
         'HOST': 'db.iasql.com',
         'PORT': '5432',
     }

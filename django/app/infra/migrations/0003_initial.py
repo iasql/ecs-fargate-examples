@@ -3,8 +3,6 @@
 from django.conf import settings
 from django.db import migrations, connections
 
-from os import environ
-
 from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetGroup, Listener, \
     LoadBalancerSecurityGroups, PublicRepository, Cluster, ContainerDefinition, TaskDefinition, Service, \
     ServiceSecurityGroups, Subnet
@@ -14,7 +12,7 @@ from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetG
 PROJECT_NAME = settings.IASQL_PROJECT_NAME
 
 # AWS ELASTIC CONTAINER REPOSITORY (ECR)
-REGION = f"-{environ['AWS_REGION']}" if environ['AWS_REGION'] is not None else ""
+REGION = f"-{settings.env('AWS_REGION')}" if settings.env('AWS_REGION') is not None else ""
 REPOSITORY = f"{PROJECT_NAME}-repository{REGION}"
 
 # AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
