@@ -4,6 +4,7 @@ module.exports = class Install1646683871211 {
   async up(queryRunner) {
     await queryRunner.query(`
       SELECT * FROM iasql_install(
+        'aws_iam',
         'aws_vpc',
         'aws_security_group',
         'aws_elb',
@@ -18,6 +19,7 @@ module.exports = class Install1646683871211 {
   async down(queryRunner) {
     await queryRunner.query(`
       SELECT * FROM iasql_uninstall(
+        'aws_iam',
         'aws_vpc',
         'aws_security_group',
         'aws_elb',
