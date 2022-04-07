@@ -50,8 +50,11 @@ BEGIN;
 
   INSERT INTO cluster (cluster_name) VALUES('${projectName}-cluster');
 
-  INSERT INTO task_definition ("family", cpu_memory)
-  VALUES ('${projectName}-td', '${taskDefResources}');
+  INSERT INTO role (role_name, assume_role_policy_document, attached_policies_arns)
+  VALUES ('ecsTaskExecRole', '{"Version":"2012-10-17","Statement":[{"Sid":"","Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}', array['arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy']);
+
+  INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
+  VALUES ('${projectName}-td', 'ecsTaskExecRole', 'ecsTaskExecRole', '${taskDefResources}');
 
   INSERT INTO container_definition ("name", essential, public_repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
   VALUES (
