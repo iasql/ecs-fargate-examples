@@ -20,7 +20,8 @@ class Migration(migrations.Migration):
                 'aws_cloudwatch',
                 'aws_ecr',
                 'aws_ecs_fargate',
-                'aws_rds'
+                'aws_rds',
+                'aws_iam'
             );
             """,
             """
@@ -31,7 +32,8 @@ class Migration(migrations.Migration):
                 'aws_cloudwatch',
                 'aws_ecr',
                 'aws_ecs_fargate',
-                'aws_rds'
+                'aws_rds',
+                'aws_iam'
             );
             """
         )

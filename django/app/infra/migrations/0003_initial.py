@@ -2,10 +2,11 @@
 
 from django.conf import settings
 from django.db import migrations, connections
+import json
 
 from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetGroup, Listener, \
     LoadBalancerSecurityGroups, Repository, Cluster, ContainerDefinition, TaskDefinition, Service, \
-    ServiceSecurityGroups, Subnet
+    ServiceSecurityGroups, Subnet, Role
 
 
 # TODO replace with your desired project name
@@ -14,6 +15,24 @@ ENV = settings.ENV
 
 # AWS ELASTIC CONTAINER REPOSITORY (ECR)
 REPOSITORY = f"{PROJECT_NAME}-repository"
+
+# AWS IAM
+REGION = f"-{ENV('AWS_REGION')}" if ENV('AWS_REGION') is not None else ""
+TASK_ROLE_NAME = f"ecsTaskExecRole{REGION}"
+TASK_ASSUME_POLICY = json.dumps({
+  "Version": "2012-10-17",
+  "Statement": [
+      {
+          "Sid": "",
+          "Effect": "Allow",
+          "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+      }
+  ]
+})
+TASK_POLICY_ARN = 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
 
 # AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 # https:#docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -66,8 +85,12 @@ def quickstart_up(_apps, schema_editor):
     # container (ECR + ECS)
     private_repository = Repository.objects.using(db_alias).create(repository_name=REPOSITORY)
     cluster = Cluster.objects.using(db_alias).create(cluster_name=CLUSTER)
+    Role.objects.using(db_alias).create(role_name=TASK_ROLE_NAME, assume_role_policy_document=TASK_ASSUME_POLICY,
+                                        attached_policies_arns=TASK_POLICY_ARN)
     task_definition = TaskDefinition.objects.using(db_alias).create(family=TASK_DEF_FAMILY,
-                                                                    cpu_memory=TASK_DEF_RESOURCES)
+                                                                    cpu_memory=TASK_DEF_RESOURCES,
+                                                                    task_role_name=TASK_ROLE_NAME,
+                                                                    execution_role_name=TASK_ROLE_NAME)
     ContainerDefinition.objects.using(db_alias).create(name=CONTAINER, essential=True,
                                                        public_repository_id=private_repository.id,
                                                        task_definition_id=task_definition.id, tag=IMAGE_TAG,
@@ -89,6 +112,7 @@ def quickstart_down(_apps, schema_editor):
     Service.objects.using(db_alias).filter(name=SERVICE).delete()
     ContainerDefinition.objects.using(db_alias).filter(task_definition__family=TASK_DEF_FAMILY).delete()
     TaskDefinition.objects.using(db_alias).filter(family=TASK_DEF_FAMILY).delete()
+    Role.objects.using(db_alias).filter(role_name=TASK_ROLE_NAME).delete()
     Cluster.objects.using(db_alias).filter(cluster_name=CLUSTER).delete()
     Repository.objects.using(db_alias).filter(repository_name=REPOSITORY).delete()
     Listener.objects.using(db_alias).filter(load_balancer__load_balancer_name=LOAD_BALANCER,
