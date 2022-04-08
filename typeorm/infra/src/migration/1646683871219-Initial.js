@@ -4,7 +4,24 @@ const PROJECT_NAME = pkg.name;
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
 const region = !process.env.AWS_REGION ? '' : `-${process.env.AWS_REGION}`;
-const REPOSITORY = `${PROJECT_NAME}-repository${region}`;
+const REPOSITORY = `${PROJECT_NAME}-repository`;
+
+// AWS IAM
+const TASK_ROLE_NAME = `ecsTaskExecRole-${region}`;
+const TASK_ASSUME_POLICY = JSON.stringify({
+  "Version": "2012-10-17",
+  "Statement": [
+      {
+          "Sid": "",
+          "Effect": "Allow",
+          "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+      }
+  ]
+});
+const TASK_POLICY_ARN = 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy';
 
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -77,17 +94,20 @@ module.exports = class Initial1646683871219 {
     // container (ECR + ECS)
     await queryRunner.query(`
       BEGIN;
-        INSERT INTO public_repository (repository_name) VALUES ('${REPOSITORY}');
+        INSERT INTO repository (repository_name) VALUES ('${REPOSITORY}');
 
         INSERT INTO cluster (cluster_name) VALUES('${CLUSTER}');
 
-        INSERT INTO task_definition ("family", cpu_memory)
-        VALUES ('${TASK_DEF_FAMILY}', '${TASK_DEF_RESOURCES}');
+        INSERT INTO role (role_name, assume_role_policy_document, attached_policies_arns)
+        VALUES ('${TASK_ROLE_NAME}', '${TASK_ASSUME_POLICY}', array['${TASK_POLICY_ARN}']);
 
-        INSERT INTO container_definition ("name", essential, public_repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
+        INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
+        VALUES ('${TASK_DEF_FAMILY}', '${TASK_ROLE_NAME}', '${TASK_ROLE_NAME}', '${TASK_DEF_RESOURCES}');
+
+        INSERT INTO container_definition ("name", essential, repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
         VALUES (
           '${CONTAINER}', true,
-          (select id from public_repository where repository_name = '${REPOSITORY}' limit 1),
+          (select id from repository where repository_name = '${REPOSITORY}' limit 1),
           (select id from task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
           '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}'
         );
@@ -142,9 +162,11 @@ module.exports = class Initial1646683871219 {
 
         DELETE FROM task_definition WHERE family = '${TASK_DEF_FAMILY}';
 
+        DELETE FROM role WHERE role_name = '${TASK_ROLE_NAME}';
+
         DELETE FROM cluster WHERE cluster_name = '${CLUSTER}';
 
-        DELETE FROM public_repository WHERE repository_name = '${REPOSITORY}';
+        DELETE FROM repository WHERE repository_name = '${REPOSITORY}';
       COMMIT;
     `);
 
