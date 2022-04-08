@@ -46,7 +46,7 @@ COMMIT;
 -- AWS ELASTIC CONTAINER REPOSITORY (ECR)
 -- https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
 BEGIN;
-  INSERT INTO public_repository (repository_name) VALUES ('${projectName}-repository');
+  INSERT INTO repository (repository_name) VALUES ('${projectName}-repository');
 
   INSERT INTO cluster (cluster_name) VALUES('${projectName}-cluster');
 
@@ -56,10 +56,10 @@ BEGIN;
   INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
   VALUES ('${projectName}-td', 'ecsTaskExecRole', 'ecsTaskExecRole', '${taskDefResources}');
 
-  INSERT INTO container_definition ("name", essential, public_repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
+  INSERT INTO container_definition ("name", essential, repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
   VALUES (
     '${projectName}-container', true,
-    (select id from public_repository where repository_name = '${projectName}-repository' limit 1),
+    (select id from repository where repository_name = '${projectName}-repository' limit 1),
     (select id from task_definition where family = '${projectName}-td' and status is null limit 1),
     '${imageTag}', ${containerMemReservation}, ${port}, ${port}, 'tcp'
   );
