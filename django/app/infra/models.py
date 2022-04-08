@@ -19,7 +19,7 @@ class AwsAccount(models.Model):
 
 
 class Cluster(models.Model):
-    cluster_name = models.TextField(unique=True, )
+    cluster_name = models.TextField(unique=True)
     cluster_arn = models.TextField(blank=True, null=True)
     cluster_status = models.TextField(blank=True, null=True)
 
@@ -73,7 +73,7 @@ class IasqlDependencies(models.Model):
 
 
 class IasqlModule(models.Model):
-    name = models.TextField(primary_key=True, )
+    name = models.TextField(primary_key=True)
 
     class Meta:
         managed = False
@@ -95,7 +95,7 @@ class IasqlOperation(models.Model):
 
 
 class IasqlTables(models.Model):
-    table = models.TextField(primary_key=True, )
+    table = models.TextField(primary_key=True)
     module = models.ForeignKey(IasqlModule, models.DO_NOTHING, db_column='module')
 
     class Meta:
@@ -119,7 +119,7 @@ class Listener(models.Model):
 
 
 class LoadBalancer(models.Model):
-    load_balancer_name = models.TextField(unique=True, )
+    load_balancer_name = models.TextField(unique=True)
     load_balancer_arn = models.TextField(blank=True, null=True)
     dns_name = models.TextField(blank=True, null=True)
     canonical_hosted_zone_id = models.TextField(blank=True, null=True)
@@ -149,7 +149,7 @@ class LoadBalancerSecurityGroups(models.Model):
 
 
 class LogGroup(models.Model):
-    log_group_name = models.TextField(unique=True, )
+    log_group_name = models.TextField(unique=True)
     log_group_arn = models.TextField(blank=True, null=True)
     creation_time = models.DateTimeField(blank=True, null=True)
 
@@ -159,7 +159,7 @@ class LogGroup(models.Model):
 
 
 class PublicRepository(models.Model):
-    repository_name = models.TextField(unique=True, )
+    repository_name = models.TextField(unique=True)
     repository_arn = models.TextField(blank=True, null=True)
     registry_id = models.TextField(blank=True, null=True)
     repository_uri = models.TextField(blank=True, null=True)
@@ -171,7 +171,7 @@ class PublicRepository(models.Model):
 
 
 class Rds(models.Model):
-    db_instance_identifier = models.TextField(unique=True, )
+    db_instance_identifier = models.TextField(unique=True)
     allocated_storage = models.IntegerField()
     availability_zone = models.TextField()
     db_instance_class = models.TextField()
@@ -199,7 +199,7 @@ class RdsSecurityGroups(models.Model):
 
 
 class Repository(models.Model):
-    repository_name = models.TextField(unique=True, )
+    repository_name = models.TextField(unique=True)
     repository_arn = models.TextField(blank=True, null=True)
     registry_id = models.TextField(blank=True, null=True)
     repository_uri = models.TextField(blank=True, null=True)
@@ -220,6 +220,18 @@ class RepositoryPolicy(models.Model):
     class Meta:
         managed = False
         db_table = 'repository_policy'
+
+
+class Role(models.Model):
+    arn = models.TextField(blank=True, null=True)
+    role_name = models.TextField(primary_key=True)
+    assume_role_policy_document = models.TextField()
+    description = models.TextField(blank=True, null=True)
+    attached_policies_arns = ArrayField(models.TextField())
+
+    class Meta:
+        managed = False
+        db_table = 'role'
 
 
 class SecurityGroup(models.Model):
@@ -253,7 +265,7 @@ class SecurityGroupRule(models.Model):
 
 
 class Service(models.Model):
-    name = models.TextField(unique=True, )
+    name = models.TextField(unique=True)
     arn = models.TextField(blank=True, null=True)
     status = models.TextField(blank=True, null=True)
     desired_count = models.IntegerField()
@@ -295,7 +307,7 @@ class Subnet(models.Model):
 
 
 class TargetGroup(models.Model):
-    target_group_name = models.TextField(unique=True, )
+    target_group_name = models.TextField(unique=True)
     target_type = models.TextField()  # This field type is a guess.
     target_group_arn = models.TextField(blank=True, null=True)
     ip_address_type = models.TextField(blank=True, null=True)  # This field type is a guess.
@@ -321,10 +333,10 @@ class TaskDefinition(models.Model):
     task_definition_arn = models.TextField(blank=True, null=True)
     family = models.TextField()
     revision = models.IntegerField(blank=True, null=True)
-    task_role_arn = models.TextField(blank=True, null=True)
-    execution_role_arn = models.TextField(blank=True, null=True)
     status = models.TextField(blank=True, null=True)  # This field type is a guess.
     cpu_memory = models.TextField(blank=True, null=True)  # This field type is a guess.
+    task_role_name = models.ForeignKey(Role, models.DO_NOTHING, db_column='task_role_name', blank=True, null=True, related_name='task_role_name')
+    execution_role_name = models.ForeignKey(Role, models.DO_NOTHING, db_column='execution_role_name', blank=True, null=True, related_name='execution_role_name')
 
     class Meta:
         managed = False
