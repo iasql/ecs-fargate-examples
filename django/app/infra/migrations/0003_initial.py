@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import migrations, connections
 
 from infra.models import SecurityGroup, SecurityGroupRule, LoadBalancer, TargetGroup, Listener, \
-    LoadBalancerSecurityGroups, PublicRepository, Cluster, ContainerDefinition, TaskDefinition, Service, \
+    LoadBalancerSecurityGroups, Repository, Cluster, ContainerDefinition, TaskDefinition, Service, \
     ServiceSecurityGroups, Subnet
 
 
@@ -13,8 +13,7 @@ PROJECT_NAME = settings.IASQL_PROJECT_NAME
 ENV = settings.ENV
 
 # AWS ELASTIC CONTAINER REPOSITORY (ECR)
-REGION = f"-{ENV('AWS_REGION')}" if ENV('AWS_REGION') is not None else ""
-REPOSITORY = f"{PROJECT_NAME}-repository{REGION}"
+REPOSITORY = f"{PROJECT_NAME}-repository"
 
 # AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 # https:#docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -65,12 +64,12 @@ def quickstart_up(_apps, schema_editor):
                                             target_group_id=target_group.id)
 
     # container (ECR + ECS)
-    public_repository = PublicRepository.objects.using(db_alias).create(repository_name=REPOSITORY)
+    private_repository = Repository.objects.using(db_alias).create(repository_name=REPOSITORY)
     cluster = Cluster.objects.using(db_alias).create(cluster_name=CLUSTER)
     task_definition = TaskDefinition.objects.using(db_alias).create(family=TASK_DEF_FAMILY,
                                                                     cpu_memory=TASK_DEF_RESOURCES)
     ContainerDefinition.objects.using(db_alias).create(name=CONTAINER, essential=True,
-                                                       public_repository_id=public_repository.id,
+                                                       public_repository_id=private_repository.id,
                                                        task_definition_id=task_definition.id, tag=IMAGE_TAG,
                                                        memory_reservation=CONTAINER_MEM_RESERVATION,
                                                        host_port=PORT, container_port=PORT, protocol=PROTOCOL.lower())
@@ -91,7 +90,7 @@ def quickstart_down(_apps, schema_editor):
     ContainerDefinition.objects.using(db_alias).filter(task_definition__family=TASK_DEF_FAMILY).delete()
     TaskDefinition.objects.using(db_alias).filter(family=TASK_DEF_FAMILY).delete()
     Cluster.objects.using(db_alias).filter(cluster_name=CLUSTER).delete()
-    PublicRepository.objects.using(db_alias).filter(repository_name=REPOSITORY).delete()
+    Repository.objects.using(db_alias).filter(repository_name=REPOSITORY).delete()
     Listener.objects.using(db_alias).filter(load_balancer__load_balancer_name=LOAD_BALANCER,
                                             port=PORT, protocol="HTTP", action_type="forward",
                                             target_group__target_group_name=TARGET_GROUP).delete()
