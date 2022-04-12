@@ -114,7 +114,7 @@ module.exports = class Initial1646683871219 {
           '${CONTAINER}', true,
           '${REPOSITORY}',
           (select id from task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
-          '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}', ${LOG_GROUP}
+          '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}', '${LOG_GROUP}'
         );
       COMMIT;
     `);
