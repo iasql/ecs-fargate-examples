@@ -87,10 +87,10 @@ module.exports = class Initial1646683871219 {
               (SELECT id FROM security_group WHERE group_name = '${SECURITY_GROUP}' LIMIT 1));
 
         INSERT INTO listener
-            (load_balancer_name, port, protocol, action_type, target_group_id)
+            (load_balancer_name, port, protocol, action_type, target_group_name)
         VALUES
             ('${LOAD_BALANCER}',
-              ${PORT}, 'HTTP', 'forward', (SELECT id FROM target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1));
+              ${PORT}, 'HTTP', 'forward', '${TARGET_GROUP}');
       COMMIT;
     `);
 
