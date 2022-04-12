@@ -23,6 +23,9 @@ const TASK_ASSUME_POLICY = JSON.stringify({
 });
 const TASK_POLICY_ARN = 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy';
 
+// AWS CLOUDWATCH
+const LOG_GROUP = `${PROJECT_NAME}-log-group`
+
 // AWS FARGATE + ELASTIC CONTAINER SERVICE (ECS)
 // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
 const TASK_DEF_RESOURCES = 'vCPU2-8GB'; // task_definition_cpu_memory enum
@@ -78,15 +81,15 @@ module.exports = class Initial1646683871219 {
             ('${LOAD_BALANCER}', 'internet-facing', 'default', 'application', 'ipv4');
 
         INSERT INTO load_balancer_security_groups
-            (load_balancer_id, security_group_id)
+            (load_balancer_name, security_group_id)
         VALUES
-            ((SELECT id FROM load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
+            ('${LOAD_BALANCER}',
               (SELECT id FROM security_group WHERE group_name = '${SECURITY_GROUP}' LIMIT 1));
 
         INSERT INTO listener
-            (load_balancer_id, port, protocol, action_type, target_group_id)
+            (load_balancer_name, port, protocol, action_type, target_group_id)
         VALUES
-            ((SELECT id FROM load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1),
+            ('${LOAD_BALANCER}',
               ${PORT}, 'HTTP', 'forward', (SELECT id FROM target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1));
       COMMIT;
     `);
@@ -94,6 +97,8 @@ module.exports = class Initial1646683871219 {
     // container (ECR + ECS)
     await queryRunner.query(`
       BEGIN;
+        INSERT INTO log_group (log_group_name) VALUES ('${LOG_GROUP}');
+
         INSERT INTO repository (repository_name) VALUES ('${REPOSITORY}');
 
         INSERT INTO cluster (cluster_name) VALUES('${CLUSTER}');
@@ -104,12 +109,12 @@ module.exports = class Initial1646683871219 {
         INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
         VALUES ('${TASK_DEF_FAMILY}', '${TASK_ROLE_NAME}', '${TASK_ROLE_NAME}', '${TASK_DEF_RESOURCES}');
 
-        INSERT INTO container_definition ("name", essential, repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
+        INSERT INTO container_definition ("name", essential, repository_name, task_definition_id, tag, memory_reservation, host_port, container_port, protocol, log_group_name)
         VALUES (
           '${CONTAINER}', true,
-          (select id from repository where repository_name = '${REPOSITORY}' limit 1),
+          '${REPOSITORY}',
           (select id from task_definition where family = '${TASK_DEF_FAMILY}' and status is null limit 1),
-          '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}'
+          '${IMAGE_TAG}', ${CONTAINER_MEM_RESERVATION}, ${PORT}, ${PORT}, '${PROTOCOL.toLowerCase()}', ${LOG_GROUP}
         );
       COMMIT;
     `);
@@ -117,18 +122,18 @@ module.exports = class Initial1646683871219 {
     // create ECS service and associate it to security group
     await queryRunner.query(`
       BEGIN;
-        INSERT INTO service ("name", desired_count, assign_public_ip, subnets, cluster_id, task_definition_id, target_group_id)
+        INSERT INTO service ("name", desired_count, assign_public_ip, subnets, cluster_name, task_definition_id, target_group_name)
         VALUES (
           '${SERVICE}', ${SERVICE_DESIRED_COUNT}, 'ENABLED',
           (select array(select subnet_id from subnet inner join vpc on vpc.id = subnet.vpc_id where is_default = true limit 3)),
-          (select id from cluster where cluster_name = '${CLUSTER}'),
+          '${CLUSTER}',
           (select id from task_definition where family = '${TASK_DEF_FAMILY}' order by revision desc limit 1),
-          (select id from target_group where target_group_name = '${TARGET_GROUP}' limit 1)
+          '${TARGET_GROUP}'
         );
 
-        INSERT INTO service_security_groups (service_id, security_group_id)
+        INSERT INTO service_security_groups (service_name, security_group_id)
         VALUES (
-          (select id from service where name = '${SERVICE}' limit 1),
+          '${SERVICE}',
           (select id from security_group where group_name = '${SECURITY_GROUP}' limit 1)
         );
       COMMIT;
@@ -167,6 +172,8 @@ module.exports = class Initial1646683871219 {
         DELETE FROM cluster WHERE cluster_name = '${CLUSTER}';
 
         DELETE FROM repository WHERE repository_name = '${REPOSITORY}';
+
+        DELETE FROM log_group WHERE log_group_name = '${LOG_GROUP}';
       COMMIT;
     `);
 
@@ -174,12 +181,10 @@ module.exports = class Initial1646683871219 {
     await queryRunner.query(`
       BEGIN;
         DELETE FROM listener
-        WHERE load_balancer_id = (SELECT id FROM load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1)
-          and port = ${PORT} and protocol = 'HTTP' and action_type = 'forward'
-          and target_group_id = (SELECT id FROM target_group WHERE target_group_name = '${TARGET_GROUP}' LIMIT 1);
+        WHERE load_balancer_name = '${LOAD_BALANCER}' AND target_group_name = '${TARGET_GROUP}';
 
         DELETE FROM load_balancer_security_groups
-        WHERE load_balancer_id = (SELECT id FROM load_balancer WHERE load_balancer_name = '${LOAD_BALANCER}' LIMIT 1);
+        WHERE load_balancer_name = '${LOAD_BALANCER}';
 
         DELETE FROM load_balancer
         WHERE load_balancer_name = '${LOAD_BALANCER}';
