@@ -81,7 +81,7 @@ async function main() {
     data: {
       name: `${PROJECT_NAME}-container`, essential: true,
       log_group_name: logGroup.log_group_name,
-      public_repository_name: repo.repository_name, task_definition_id: task.id, tag: 'latest',
+      repository_name: repo.repository_name, task_definition_id: task.id, tag: 'latest',
       memory_reservation: CONTAINER_MEM_RESERVATION,
       host_port: PORT, container_port: PORT, protocol: 'tcp',
     }
