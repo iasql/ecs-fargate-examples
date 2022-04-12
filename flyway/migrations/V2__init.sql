@@ -31,21 +31,24 @@ BEGIN;
       ('${projectName}-load-balancer', 'internet-facing', 'default', 'application', 'ipv4');
 
   INSERT INTO load_balancer_security_groups
-      (load_balancer_id, security_group_id)
+      (load_balancer_name, security_group_id)
   VALUES
-      ((SELECT id FROM load_balancer WHERE load_balancer_name = '${projectName}-load-balancer' LIMIT 1),
-        (SELECT id FROM security_group WHERE group_name = '${projectName}-security-group' LIMIT 1));
+      ('${projectName}-load-balancer',
+        (SELECT id FROM security_group WHERE group_name = '${projectName}-security-group' LIMIT 1)
+      );
 
   INSERT INTO listener
-      (load_balancer_id, port, protocol, action_type, target_group_id)
+      (load_balancer_name, port, protocol, action_type, target_group_name)
   VALUES
-      ((SELECT id FROM load_balancer WHERE load_balancer_name = '${projectName}-load-balancer' LIMIT 1),
-        ${port}, 'HTTP', 'forward', (SELECT id FROM target_group WHERE target_group_name = '${projectName}-target' LIMIT 1));
+      ('${projectName}-load-balancer',
+        ${port}, 'HTTP', 'forward', '${projectName}-target');
 COMMIT;
 
--- AWS ELASTIC CONTAINER REPOSITORY (ECR)
+-- ELASTIC CONTAINER REPOSITORY (ECR) + ELASTIC CONTAINER SERVICE (ECS) + CLOUDWATCH
 -- https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
 BEGIN;
+  INSERT INTO log_group (log_group_name) VALUES ('${projectName}-log-group');
+
   INSERT INTO repository (repository_name) VALUES ('${projectName}-repository');
 
   INSERT INTO cluster (cluster_name) VALUES('${projectName}-cluster');
@@ -56,29 +59,29 @@ BEGIN;
   INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
   VALUES ('${projectName}-td', 'ecsTaskExecRole', 'ecsTaskExecRole', '${taskDefResources}');
 
-  INSERT INTO container_definition ("name", essential, repository_id, task_definition_id, tag, memory_reservation, host_port, container_port, protocol)
+  INSERT INTO container_definition ("name", essential, repository_name, task_definition_id, tag, memory_reservation, host_port, container_port, protocol, log_group_name)
   VALUES (
     '${projectName}-container', true,
-    (select id from repository where repository_name = '${projectName}-repository' limit 1),
+    '${projectName}-repository',
     (select id from task_definition where family = '${projectName}-td' and status is null limit 1),
-    '${imageTag}', ${containerMemReservation}, ${port}, ${port}, 'tcp'
+    '${imageTag}', ${containerMemReservation}, ${port}, ${port}, 'tcp', '${projectName}-log-group'
   );
 COMMIT;
 
 -- create ECS service and associate it to security group
 BEGIN;
-  INSERT INTO service ("name", desired_count, assign_public_ip, subnets, cluster_id, task_definition_id, target_group_id)
+  INSERT INTO service ("name", desired_count, assign_public_ip, subnets, cluster_name, task_definition_id, target_group_name)
   VALUES (
     '${projectName}-service', 1, 'ENABLED',
     (select array(select subnet_id from subnet inner join vpc on vpc.id = subnet.vpc_id where is_default = true limit 3)),
-    (select id from cluster where cluster_name = '${projectName}-cluster'),
+    '${projectName}-cluster',
     (select id from task_definition where family = '${projectName}-td' order by revision desc limit 1),
-    (select id from target_group where target_group_name = '${projectName}-target' limit 1)
+    '${projectName}-target'
   );
 
-  INSERT INTO service_security_groups (service_id, security_group_id)
+  INSERT INTO service_security_groups (service_name, security_group_id)
   VALUES (
-    (select id from service where name = '${projectName}-service' limit 1),
+    '${projectName}-service',
     (select id from security_group where group_name = '${projectName}-security-group' limit 1)
   );
 COMMIT;
