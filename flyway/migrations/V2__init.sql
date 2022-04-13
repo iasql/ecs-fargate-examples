@@ -21,14 +21,14 @@ COMMIT;
 -- AWS ELASTIC LOAD BALANCER
 BEGIN;
   INSERT INTO target_group
-      (target_group_name, target_type, protocol, port, vpc, health_check_path)
+      (target_group_name, target_type, protocol, port, health_check_path)
   VALUES
-      ('${project_name}-target', 'ip', 'HTTP', ${port}, null, '/health');
+      ('${project_name}-target', 'ip', 'HTTP', ${port}, '/health');
 
   INSERT INTO load_balancer
-      (load_balancer_name, scheme, vpc, load_balancer_type, ip_address_type)
+      (load_balancer_name, scheme, load_balancer_type, ip_address_type)
   VALUES
-      ('${project_name}-load-balancer', 'internet-facing', null, 'application', 'ipv4');
+      ('${project_name}-load-balancer', 'internet-facing', 'application', 'ipv4');
 
   INSERT INTO load_balancer_security_groups
       (load_balancer_name, security_group_id)
