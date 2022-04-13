@@ -64,7 +64,7 @@ BEGIN;
     '${project_name}-container', true,
     '${project_name}-repository',
     (select id from task_definition where family = '${project_name}-td' and status is null limit 1),
-    '${image_tag}', ${containerMemReservation}, ${port}, ${port}, 'tcp', '${project_name}-log-group'
+    '${image_tag}', ${container_mem_reservation}, ${port}, ${port}, 'tcp', '${project_name}-log-group'
   );
 COMMIT;
 
