@@ -73,12 +73,12 @@ module.exports = class Initial1646683871219 {
         INSERT INTO target_group
             (target_group_name, target_type, protocol, port, vpc, health_check_path)
         VALUES
-            ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, 'default', '/health');
+            ('${TARGET_GROUP}', 'ip', 'HTTP', ${PORT}, null, '/health');
 
         INSERT INTO load_balancer
             (load_balancer_name, scheme, vpc, load_balancer_type, ip_address_type)
         VALUES
-            ('${LOAD_BALANCER}', 'internet-facing', 'default', 'application', 'ipv4');
+            ('${LOAD_BALANCER}', 'internet-facing', null, 'application', 'ipv4');
 
         INSERT INTO load_balancer_security_groups
             (load_balancer_name, security_group_id)
