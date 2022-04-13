@@ -56,30 +56,32 @@ async function main() {
   });
   const listener = await prisma.listener.create({
     data: {
-      load_balancer_id: lb.id,
+      load_balancer_name: lb.load_balancer_name,
       port: PORT,
       protocol: 'HTTP',
       action_type: 'forward',
-      target_group_id: tg.id
+      target_group_name: tg.target_group_name,
     }
   });
 
-  // AWS ELASTIC CONTAINER REPOSITORY (ECR)
-  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
-
-  const repo = await prisma.public_repository.create({
+  const repo = await prisma.repository.create({
     data: { repository_name: `${PROJECT_NAME}-repository`}
+  });
+  const logGroup = await prisma.log_group.create({
+    data: { log_group_name: `${PROJECT_NAME}-log-group`}
   });
   const cluster = await prisma.cluster.create({
     data: { cluster_name: `${PROJECT_NAME}-cluster`}
   });
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
   const task = await prisma.task_definition.create({
     data: { family: `${PROJECT_NAME}-td`, cpu_memory: task_definition_cpu_memory_enum.vCPU2_8GB}
   });
   const container = await prisma.container_definition.create({
     data: {
       name: `${PROJECT_NAME}-container`, essential: true,
-      public_repository_id: repo.id, task_definition_id: task.id, tag: 'latest',
+      log_group_name: logGroup.log_group_name,
+      repository_name: repo.repository_name, task_definition_id: task.id, tag: 'latest',
       memory_reservation: CONTAINER_MEM_RESERVATION,
       host_port: PORT, container_port: PORT, protocol: 'tcp',
     }
@@ -100,7 +102,7 @@ async function main() {
   const service = await prisma.service.create({
     data: {
       name: `${PROJECT_NAME}-service`, desired_count: 1, assign_public_ip: 'ENABLED',
-      cluster_id: cluster.id, task_definition_id: task.id, target_group_id: tg.id,
+      cluster_name: cluster.cluster_name, task_definition_id: task.id, target_group_name: tg.target_group_name,
       subnets: subnet_ids,
       service_security_groups: {
         create: {
