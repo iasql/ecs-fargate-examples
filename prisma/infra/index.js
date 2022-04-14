@@ -4,6 +4,7 @@ const pkg = require('./package.json');
 // TODO replace with your desired project name
 const PROJECT_NAME = pkg.name;
 
+const REGION = process.env.AWS_REGION ?? '';
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB
 const PORT = 8088;
 
@@ -36,7 +37,6 @@ async function main() {
       target_type: 'ip',
       protocol: 'HTTP',
       port: PORT,
-      vpc: 'default',
       health_check_path: '/health'
     },
   });
@@ -46,7 +46,6 @@ async function main() {
       scheme: load_balancer_scheme_enum.internet_facing,
       load_balancer_type: 'application',
       ip_address_type: 'ipv4',
-      vpc: 'default',
       load_balancer_security_groups: {
         create: {
           security_group_id: sg.id,
@@ -63,7 +62,13 @@ async function main() {
       target_group_name: tg.target_group_name,
     }
   });
-
+  const role = await prisma.role.create({
+    data: {
+      role_name: `ecsTaskExecRole${REGION}`,
+      assume_role_policy_document: '{"Version":"2012-10-17","Statement":[{"Sid":"","Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}',
+      attached_policies_arns: ['arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy']
+    }
+  });
   const repo = await prisma.repository.create({
     data: { repository_name: `${PROJECT_NAME}-repository`}
   });
@@ -75,7 +80,10 @@ async function main() {
   });
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
   const task = await prisma.task_definition.create({
-    data: { family: `${PROJECT_NAME}-td`, cpu_memory: task_definition_cpu_memory_enum.vCPU2_8GB}
+    data: {
+      family: `${PROJECT_NAME}-td`, cpu_memory: task_definition_cpu_memory_enum.vCPU2_8GB,
+      task_role_name: role.role_name, execution_role_name: role.role_name,
+    }
   });
   const container = await prisma.container_definition.create({
     data: {
