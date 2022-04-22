@@ -1,8 +1,9 @@
-const { PrismaClient, load_balancer_scheme_enum, task_definition_cpu_memory_enum } = require('@prisma/client')
+import { execSync } from 'child_process'
+import { PrismaClient, load_balancer_scheme_enum, task_definition_cpu_memory_enum } from '@prisma/client';
 
-const pkg = require('./package.json');
+import { name as pkgName } from './package.json';
 // TODO replace with your desired project name
-const PROJECT_NAME = pkg.name;
+const PROJECT_NAME = pkgName;
 
 const REGION = process.env.AWS_REGION ?? '';
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB
@@ -122,6 +123,23 @@ async function main() {
 
   const apply = await prisma.$queryRaw`SELECT * from iasql_apply();`
   console.dir(apply)
+
+  const repository_uri = await prisma.repository.findFirst({
+    where: { repository_name: `${PROJECT_NAME}-repository`},
+    select: { repository_uri }
+  });
+
+  console.log('Docker login...')
+  execSync(`aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${repository_uri}`)
+
+  console.log('Building image...')
+  execSync(`docker build -t ${PROJECT_NAME}-repository ${__dirname}/../app`);
+
+  console.log('Tagging image...')
+  execSync(`docker tag ${PROJECT_NAME}-repository:latest ${repository_uri}:latest`);
+
+  console.log('Pushing image...')
+  execSync(`docker push ${repository_uri}:latest`);
 }
 
 main()
