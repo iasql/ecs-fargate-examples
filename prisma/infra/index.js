@@ -126,7 +126,7 @@ async function main() {
 
   const repository_uri = await prisma.repository.findFirst({
     where: { repository_name: `${PROJECT_NAME}-repository`},
-    select: { repository_uri }
+    select: { repository_uri: true }
   });
 
   console.log('Docker login...')
