@@ -1,7 +1,7 @@
-import { execSync } from 'child_process'
-import { PrismaClient, load_balancer_scheme_enum, task_definition_cpu_memory_enum } from '@prisma/client';
+const { execSync } = require('child_process')
+const { PrismaClient, load_balancer_scheme_enum, task_definition_cpu_memory_enum } = require('@prisma/client');
 
-import { name as pkgName } from './package.json';
+const pkg = require('./package.json');
 // TODO replace with your desired project name
 const PROJECT_NAME = pkgName;
 

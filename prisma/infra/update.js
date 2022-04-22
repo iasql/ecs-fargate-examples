@@ -1,7 +1,7 @@
-import { execSync } from 'child_process'
-import { PrismaClient } from '@prisma/client';
+const { execSync } = require('child_process')
+const { PrismaClient } = require('@prisma/client');
 
-import { name as pkgName } from './package.json';
+const pkg = require('./package.json');
 const PROJECT_NAME = pkgName;
 
 const REGION = process.env.AWS_REGION ?? '';
