@@ -3,7 +3,7 @@ const { PrismaClient, load_balancer_scheme_enum, task_definition_cpu_memory_enum
 
 const pkg = require('./package.json');
 // TODO replace with your desired project name
-const PROJECT_NAME = pkgName;
+const PROJECT_NAME = pkg.name;
 
 const REGION = process.env.AWS_REGION ?? '';
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB

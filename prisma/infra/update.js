@@ -2,7 +2,7 @@ const { execSync } = require('child_process')
 const { PrismaClient } = require('@prisma/client');
 
 const pkg = require('./package.json');
-const PROJECT_NAME = pkgName;
+const PROJECT_NAME = pkg.name;
 
 const REGION = process.env.AWS_REGION ?? '';
 
