@@ -3,11 +3,12 @@ const pkg = require('../../package.json');
 const PROJECT_NAME = pkg.name;
 
 // AWS ELASTIC CONTAINER REPOSITORY (ECR)
-const region = !process.env.AWS_REGION ? '' : `-${process.env.AWS_REGION}`;
+const region = !process.env.AWS_REGION ? '' : process.env.AWS_REGION;
 const REPOSITORY = `${PROJECT_NAME}-repository`;
 
 // AWS IAM
-const TASK_ROLE_NAME = `ecsTaskExecRole-${region}`;
+const RUN_ID = process.env.RUN_ID ?? '';
+const TASK_ROLE_NAME = `${RUN_ID}_ecsTaskExecRole_${region}`;
 const TASK_ASSUME_POLICY = JSON.stringify({
   "Version": "2012-10-17",
   "Statement": [

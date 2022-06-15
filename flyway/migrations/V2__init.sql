@@ -54,10 +54,10 @@ BEGIN;
   INSERT INTO cluster (cluster_name) VALUES('${project_name}-cluster');
 
   INSERT INTO role (role_name, assume_role_policy_document, attached_policies_arns)
-  VALUES ('ecsTaskExecRole${region}', '{"Version":"2012-10-17","Statement":[{"Sid":"","Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}', array['arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy']);
+  VALUES ('${run_id}_ecsTaskExecRole_${region}', '{"Version":"2012-10-17","Statement":[{"Sid":"","Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}', array['arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy']);
 
   INSERT INTO task_definition ("family", task_role_name, execution_role_name, cpu_memory)
-  VALUES ('${project_name}-td', 'ecsTaskExecRole${region}', 'ecsTaskExecRole${region}', '${task_def_resources}');
+  VALUES ('${project_name}-td', '${run_id}_ecsTaskExecRole_${region}', '${run_id}_ecsTaskExecRole_${region}', '${task_def_resources}');
 
   INSERT INTO container_definition ("name", essential, repository_name, task_definition_id, tag, memory_reservation, host_port, container_port, protocol, log_group_name)
   VALUES (
