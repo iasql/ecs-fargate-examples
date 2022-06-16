@@ -6,6 +6,7 @@ const pkg = require('./package.json');
 const PROJECT_NAME = pkg.name;
 
 const REGION = process.env.AWS_REGION ?? '';
+const RUN_ID = process.env.RUN_ID ?? '';
 const CONTAINER_MEM_RESERVATION = 8192; // in MiB
 const PORT = 8088;
 
@@ -65,7 +66,7 @@ async function main() {
   });
   const role = await prisma.role.create({
     data: {
-      role_name: `ecsTaskExecRole${REGION}`,
+      role_name: `${RUN_ID}_ecsTaskExecRole_${REGION}`,
       assume_role_policy_document: '{"Version":"2012-10-17","Statement":[{"Sid":"","Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}',
       attached_policies_arns: ['arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy']
     }
