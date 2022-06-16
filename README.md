@@ -4,6 +4,7 @@ This [template repository](https://docs.github.com/en/repositories/creating-and-
 
 To illustrate all the different ways in which infrastructure can be managed with IaSQL, we implement the same infrastructure with IaSQL using different ORMs. Each of them points to their respective tutorial:
 - [TypeORM (SQL ORM)](https://docs.iasql.com/typeorm/)
-- [Flyway (SQL)](https://docs.iasql.com/flyway/)
 - [Prisma (Javascript)](https://docs.iasql.com/prisma/)
 - [Django (Python)](https://docs.iasql.com/django/)
+
+The pure SQL tutorial lives [here](https://docs.iasql.com/sql/)

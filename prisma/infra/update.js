@@ -9,8 +9,8 @@ const REGION = process.env.AWS_REGION ?? '';
 const prisma = new PrismaClient()
 
 async function main() {
-  const repo_uri = (await prisma.repository.findFirst({
-    where: { repository_name: `${PROJECT_NAME}-repository`},
+  const repo_uri = (await prisma.ecs_simplified.findFirst({
+    where: { app_name: PROJECT_NAME},
     select: { repository_uri: true }
   })).repository_uri;
 
@@ -27,7 +27,7 @@ async function main() {
   execSync(`docker push ${repo_uri}:latest`);
 
   console.log('Force new deployment')
-  await prisma.service.update({
+  await prisma.ecs_simplified.update({
     where: { name: `${PROJECT_NAME}-service`},
     data: { force_new_deployment: true }
   });
