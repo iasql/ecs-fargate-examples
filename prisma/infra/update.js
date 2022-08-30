@@ -28,7 +28,7 @@ async function main() {
 
   console.log('Force new deployment')
   await prisma.ecs_simplified.update({
-    where: { name: `${PROJECT_NAME}-service`},
+    where: { name: PROJECT_NAME },
     data: { force_new_deployment: true }
   });
   const apply = await prisma.$queryRaw`SELECT * from iasql_apply();`

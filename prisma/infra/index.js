@@ -12,7 +12,10 @@ const prisma = new PrismaClient()
 
 async function main() {
   const data = {
-    app_name: PROJECT_NAME, public_ip: true, app_port: PORT
+    app_name: PROJECT_NAME,
+    public_ip: true,
+    app_port: PORT,
+    image_tag: 'latest'
   };
   await prisma.ecs_simplified.upsert({
     where: { app_name: PROJECT_NAME},
