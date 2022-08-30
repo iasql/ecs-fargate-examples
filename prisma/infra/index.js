@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const pkg = require('./package.json');
 // TODO replace with your desired project name
-const PROJECT_NAME = pkg.name;
+const PROJECT_NAME = `${RUN_ID}${pkg.name}`;
 
 const REGION = process.env.AWS_REGION ?? '';
 const PORT = 8088;
