@@ -2,12 +2,13 @@ const { execSync } = require('child_process')
 const { PrismaClient } = require('@prisma/client');
 
 const pkg = require('./package.json');
-// TODO replace with your desired project name
-const PROJECT_NAME = `${RUN_ID}${pkg.name}`;
 
 const REGION = process.env.AWS_REGION ?? '';
 const RUN_ID = process.env.RUN_ID ?? '';
 const PORT = 8088;
+
+// TODO replace with your desired project name
+const PROJECT_NAME = `${RUN_ID}${pkg.name}`;
 
 const prisma = new PrismaClient()
 
