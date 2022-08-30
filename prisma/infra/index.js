@@ -6,6 +6,7 @@ const pkg = require('./package.json');
 const PROJECT_NAME = `${RUN_ID}${pkg.name}`;
 
 const REGION = process.env.AWS_REGION ?? '';
+const RUN_ID = process.env.RUN_ID ?? '';
 const PORT = 8088;
 
 const prisma = new PrismaClient()
